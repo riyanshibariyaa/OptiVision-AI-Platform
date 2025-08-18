@@ -1,0 +1,540 @@
+
+<!-- 
+This page provides a user interface for managing units/locations. It includes:
+- A searchable data table showing unit information (name, location, address, etc)
+- Pagination controls for navigating large datasets
+- Add/Edit functionality to create and modify unit records 
+- Export capability to download unit data to Excel
+- Permissions-based access control for add/edit/delete operations
+-->
+<div id="PageContainer">
+    <div class="container" id="mycontainer">
+        <div class="row">
+            <div class="col-sm-12"> 
+                <p class="text-left h4 font-weight-light text-black-20 " ><span id="PageHeading">List of Users</span><span id="PageSubHeading" class="h6 small"> Master Data</span></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col"> 
+                <div class="card ui-widget-header">
+                    <div class="card-body">
+                        <!-- add edit download pagination -->
+                        <div class="row m-0">
+                            <div class="col-md p-1 m-1">
+                                <div class="input-group">
+                                    <input class="form-control ui-state-default  border-end-0 border TextBoxSearch" type="text" placeholder="Search ...">
+                                    <span class="input-group-text btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas"><i class="fa fa-search"></i></span>
+                                </div>
+                            </div>
+                            <div class="col-md p-1 m-1 text-end">
+
+                                <!-- Pagination Content -->
+                                <button type="button" class="btn btn-sm ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas">
+                                    <a href="#" class="prev ButtonFirst"><i class="fa fa-backward"></i></a>
+                                </button>
+
+                                <button type="button" class="btn btn-sm ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas">
+                                    <a href="#" class="prev ButtonPrev"><i class="fa fa-play"
+                                                style=" -moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); -ms-transform: scale(-1, 1); transform: scale(-1, 1);"></i></a>
+                                </button>
+
+                                <button type="button" class="btn btn-sm ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas ">
+                                    <a href="#" class="btn-sm TextBoxPage" id="pulsate-once">1</a>
+                                </button>
+
+                                <button type="button" class="btn btn-sm ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas">
+                                    <a href="#" class="next ButtonNext"><i class="fa fa-play"></i></a>
+                                </button>
+
+                                <button type="button" class="btn btn-sm mr-1 ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas">
+                                    <a href="#" class="next ButtonLast"><i class="fa fa-forward"></i></a>
+                                </button>
+
+                                <!-- Add button -->
+                                <button type="button" class="btn btn-sm ButtonAdd btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas" id="adddata">
+                                    <i class="fa fa-plus-circle"></i> 
+                                </button>
+
+                                <div class="btn btn-sm ml-1 ButtonExport btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas cta">
+                                    <a href="#" class="LinkExport"><i class="fa fa-download"></i></a>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- table -->
+                        <div class="row m-0">
+                            <div class="col p-1 m-1 table-responsive TmplContentPlaceHolder">
+                            </div>
+                        </div>
+                    </div>               
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Container -->
+    <div class="container" id="addcontainer" style="display: none;">
+        <div class="row">
+            <div class="col-sm-12"> 
+                <p class="text-left h4 font-weight-light text-black-20 "><span id="AddEditPageHeading">Add Edit Users</span><span id="AddEditPageSubHeading" class="h6 small"> Master Data</span></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="card text-center mt-3 ui-widget-header">
+                    <div class="card-body" >
+                        <div class="row mt-2">
+                            <div class="col p-1 m-1 text-end">
+                                <button type="button" class="btn btn-info btn-sm ButtonBack ui-state-default" id="backdata"><i class="fa fa-arrow-left"></i> </button>
+                                <button type="button" class="btn btn-info btn-sm ButtonSave ui-state-default"><i class="fa fa-save"></i> </button>
+                            </div>
+                        </div>
+                        <div class="row mt-2" id="AddEditContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+	function ClsViewMasterfw_users()
+	{
+        var This = this;
+
+        /*
+        * This configuration object (PageData) defines the structure and behavior of the Units management interface.
+        * 
+        * To customize this interface:
+        * 1. Rights: Configure access permissions (Add/Edit/Delete) by setting values to 1 (enabled) or 0 (disabled)
+        * 2. Export: Define the Excel export format including title and columns
+        * 3. Source: Configure database queries and their parameters for CRUD operations
+        * 4. DisplayContainer: Customize the data table display including:
+        *    - Column headers and sorting
+        *    - Page size
+        *    - Default sort field and direction
+        * 5. AddEditContainer: Define the add/edit form fields including:
+        *    - Field labels
+        *    - Input types
+        *    - Validation rules
+        *    - Display/edit permissions
+        */
+        this.PageData = {
+            "Rights": {
+                "Add": 1,
+                "Delete": 1,
+                "Edit": 1
+            },
+            "Export": {
+                "Title": {
+                    "Text": "TimeAndCriterion",
+                    "ColSpan": 5,
+                    "Align": "left"
+                },
+                "Columns": [
+                    {"Header": "Id"},
+                    {"Header": "Name"},
+                    {"Header": "Location"}, 
+                    {"Header": "Address"},
+                    {"Header": "Modified"}
+                ]
+            },
+            "View": {
+                "Flag": 0,
+                "IdSelected": "",
+                "GetRecordCount": true,
+            },
+            "Source" : {
+                "QueryCount":
+                {   "Name":"AllUnitCount",
+                    "Paramters":[".TextBoxSearch",GlbUsers.map(function(data){return data }).join(",")]
+                },
+                "QueryList":
+                {   "Name":"SelectAllUnits",
+                    "Paramters":[".TextBoxSearch", "This.SortField", "This.SortDirection", "This.Paginator.PageOffset", "This.Paginator.PageSize", GlbUsers.map(function(date){return date}).join(",")]
+                },
+                "QuerySelect":
+                {   "Name":"SelectUnit",
+                    "Paramters":["This.IdSelected"]
+                },
+                "QueryUpdate":
+                {   "Name":"UpdateUser",
+                    "IsQuery": true,
+                    "Paramters":["#TextBoxName","#TextBoxEmployeeId","#TextBoxEmail","#TextBoxMobile","This.IdSelected"]
+                },
+                "QueryInsert":
+                {   "Name":"fw_CreateNewUser",
+                    "IsQuery": false,
+                    "Paramters":["#TextBoxUserId","#TextBoxName","#TextBoxEmployeeId","#TextBoxEmail","#TextBoxMobile"]
+                },
+                "QueryDelete":
+                {   "Name":"fw_DeleteUser",
+                    "IsQuery": false,
+                    "Paramters":["This.IdSelected"]
+                },
+                "QueryRestore":
+                {   "Name":"fw_RestoreUser",
+                    "IsQuery": false,
+                    "Paramters":["This.IdSelected"]
+                }
+            },
+            "DisplayContainer": {
+                "Heading": "List of Units",
+                "SubHeading": "Master Data",
+                "Table": {
+                    "PageSize": 100,
+                    "Sort": {
+                        "Field": "Id",
+                        "Direction": "ASC"
+                    },
+                    "Columns": [
+                        {
+                            "HeaderLable": "Unit Id",
+                            "Sortfield": "_id",
+                            "IsSortable": true,
+                            "Datafield": "_id"
+                        },
+                        {
+                            "HeaderLable": "Name",
+                            "Sortfield": "name",
+                            "IsSortable": true,
+                            "Datafield": "name"
+                        },
+                        {
+                            "HeaderLable": "Location",
+                            "Sortfield": "location",
+                            "IsSortable": true,
+                            "Datafield": "location"
+                        },
+                        {
+                            "HeaderLable": "Address",
+                            "Sortfield": "address",
+                            "IsSortable": true,
+                            "Datafield": "address"
+                        },
+                        {
+                            "HeaderLable": "Modified",
+                            "Sortfield": "modified",
+                            "IsSortable": true,
+                            "Datafield": "modified"
+                        }
+                    ]
+                }
+            },
+            "AddEditContainer": {
+                "Heading": "Add/Edit Units",
+                "SubHeading": "Master Data",
+                "Fields": [
+                    {
+                        "Label": "Unit Id",
+                        "Id": "TextBoxUnitId",
+                        "DataId": "_id",
+                        "DataType": "text",
+                        "IsEditable": false,
+                        "IsRequired": true,
+                        "IsDisplayed": true
+                    },
+                    {
+                        "Label": "Name",
+                        "Id": "TextBoxName",
+                        "DataId": "name",
+                        "DataType": "text",
+                        "IsEditable": true,
+                        "IsRequired": true,
+                        "IsDisplayed": true
+                    },
+                    {
+                        "Label": "Location",
+                        "Id": "TextBoxLocation",
+                        "DataId": "location",
+                        "DataType": "text",
+                        "IsEditable": true,
+                        "IsRequired": true,
+                        "IsDisplayed": true
+                    },
+                    {
+                        "Label": "Address",
+                        "Id": "TextBoxAddress",
+                        "DataId": "address",
+                        "DataType": "text",
+                        "IsEditable": true,
+                        "IsRequired": true,
+                        "IsDisplayed": true
+                    },
+                    {
+                        "Label": "Modified",
+                        "Id": "TextBoxModified",
+                        "DataId": "modified",
+                        "DataType": "datetime",
+                        "IsEditable": false,
+                        "IsRequired": false,
+                        "IsDisplayed": true
+                    }
+                ]
+            }
+        };
+
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // DO NOT MODIFY UNLESS INTENDED
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        this.RightToAdd = this.PageData.Rights.Add;
+        this.RightToDelete = this.PageData.Rights.Delete;
+        this.RightToEdit = this.PageData.Rights.Edit;
+
+        this.ExportHeader = `<tr><td class="Header" colspan="${this.PageData.Export.Title.ColSpan}" style="text-align: ${this.PageData.Export.Title.Align}">${this.PageData.Export.Title.Text}</td></tr>
+            <tr>
+                ${this.PageData.Export.Columns.map(col => `<td class="Header">${col.Header}</td>`).join('\n                ')}
+            </tr>
+        `;
+
+        this.ViewFlag = this.PageData.View.Flag;
+        this.IdSelected = this.PageData.View.IdSelected;
+        
+        this.GetRecordCount = this.PageData.View.GetRecordCount;
+        this.SortField = this.PageData.DisplayContainer.Table.Sort.Field;
+        this.SortDirection = this.PageData.DisplayContainer.Table.Sort.Direction;
+        this.Paginator = new ClsPaginator();
+        this.SelectedDateCurrent = new Date();
+
+        this.ExecuteProcedure = async function(value)
+        {
+            // Paramaters can be 
+            // 1. HTML tag value access by class name (.) or id (#)
+            // 2. Object variable
+            // 3. array
+            Paramters = value.Paramters.map(function(data)
+            {
+                if($.type(data) === "string")
+                {    
+                    if(data.startsWith("This")) 
+                    {
+                        data = data.replace("This.", "");
+                        if(data.includes("."))
+                        {
+                            return This[data.slice(0,data.indexOf("."))][data.slice(data.indexOf(".")+1)];
+                        }    
+                        return This[data];
+                    }
+                    else if(data.startsWith(".") || data.startsWith("#"))
+                    // else if(data.startsWith("$"))
+                    {
+                        return $(data).val();
+                        // return eval(data)
+                    } 
+                }
+                return data;
+            });
+
+            return new Promise((resolve, reject) => {
+                Requester.Send(value.Name, Paramters, function(Error, Data) {
+                    if (Error) 
+                    {
+                        console.log(Data);
+                        Common.showToast(Data, 'error');
+                        reject(Data);  // Reject the promise if there is an error
+                    } 
+                    else 
+                    {
+                        resolve(Data);  // Resolve the promise with Data
+                    }
+                });
+            });
+        };
+
+		this.Init = function (Params)
+		{
+            
+            $("#PageHeading").html(This.PageData.DisplayContainer.Heading);
+            $("#PageSubHeading").html(This.PageData.DisplayContainer.SubHeading);
+            $("#AddEditPageHeading").html(This.PageData.AddEditContainer.Heading);
+            $("#AddEditPageSubHeading").html(This.PageData.AddEditContainer.SubHeading);
+
+
+            Common.loadTemplate('/static/handlebarTemplates/AddEdit.hbs', This.PageData.AddEditContainer.Fields, "#AddEditContainer");
+            This.Paginator.Init(".ButtonPagination", ".PanelPagination", ".ButtonFirst", ".ButtonLast", ".ButtonPrev", ".ButtonNext", ".TextBoxPage",
+			function ()
+			{
+				This.Populate();
+			});
+
+            This.Paginator.SetPageSize(This.PageData.DisplayContainer.Table.PageSize);
+            
+			//Show ADD Container
+			$("#adddata").click(function()
+			{
+				$("#mycontainer").hide();
+                $("#addcontainer").show();
+                $("#AddEditContainer").find("input").removeAttr("disabled");
+			});
+
+			//Show Table Data 
+			$("#backdata").click(function()
+			{
+				$("#mycontainer").show();
+                $("#addcontainer").hide();
+                $.each(This.PageData.AddEditContainer.Fields, function( index, value ) 
+                {
+                    $("#"+value.Id).val("");
+                });          
+			});
+
+            $(".ButtonSave").click(function ()
+            {
+                if (This.ViewFlag == 1)
+                {
+                    RetVal = This.ExecuteProcedure(This.PageData.Source.QueryUpdate);
+                }
+                else
+                {
+                    RetVal = This.ExecuteProcedure(This.PageData.Source.QueryInsert);
+                }
+                if (!RetVal.HasError)
+                {
+                    Common.Alert("Success", "Record saved successfully!");
+                    $("#mycontainer").show();
+                    $("#addcontainer").hide();
+                    UpdateUsers();
+                }
+                else
+                {
+                    Common.Alert("Error", "Could not save data.");
+                }
+                This.ViewFlag = 0;
+                    
+                This.Populate();
+                return Common.PrvntEvtPropg();
+            });
+
+            $(".TextBoxSearch").on("keyup", function ()
+            {
+                This.GetRecordCount = true;
+                This.Populate();
+                return Common.PrvntEvtPropg();
+            });
+   
+            $(".ButtonExport").click(function ()
+            {
+                var Header = This.ExportHeader.replace('TimeAndCriterion', This.PageData.DisplayContainer.Heading+' Generated On: ' + new Date().toString("dd/mm/yyyy hh:nn:ss") + ' [Search Text: "' + $(".TextBoxSearch").val() + '"]');
+                var RetVal = GlbServer.ExportToExcel(This.PageData.Source.QueryList.Name, $(".TextBoxSearch").val(), This.SortField, This.SortDirection, This.Paginator.PageOffset, This.Paginator.TotalRecords,GlbUsers.map(function(data){return "<Apostrophe>" + data + "<Apostrophe>";}).join(","), Header);
+                var $ExportLink = $(".LinkExport");
+ 
+                $ExportLink.attr("href", "./Downloads/" + RetVal.Data);
+                $ExportLink[0].click();
+            });
+            
+             This.Populate();
+		};
+
+		this.Populate = async function (GivenMode)
+		{
+            if (This.GetRecordCount)
+			{
+				RetVal = await This.ExecuteProcedure(This.PageData.Source.QueryCount);
+				This.Paginator.SetTotalRecords(RetVal.Data.TotalRecords);
+                This.GetRecordCount = false;
+			}
+            
+            RetVal = await This.ExecuteProcedure(This.PageData.Source.QueryList);
+            Data = {};
+            Data["Data"] = RetVal.Data;
+            Data["DeleteRight"] = This.RightToDelete;
+            
+            Data["TableHeaders"] = This.PageData.DisplayContainer.Table
+             
+            Common.loadTemplate('/static/handlebarTemplates/Table.hbs', Data, ".TmplContentPlaceHolder");
+
+            $(".SortHeader th").removeClass("sorting_asc").removeClass("sorting_desc");
+			$(".SortHeader").find("[data-sortfield='" + This.SortField + "']").addClass(This.SortDirection == "ASC" ? "sorting_asc" : "sorting_desc");
+
+			if (This.Paginator.TotalRecords > This.Paginator.PageSize)
+			{
+				$(".ButtonPagination").show();
+			}
+			else
+			{
+				$(".ButtonPagination").hide();
+            }
+            
+            $(".ClickToSort").click(function ()
+			{
+				var FieldClicked = $(this).data("sortfield");
+			
+				if (This.SortField == FieldClicked)
+				{
+					This.SortDirection = (This.SortDirection == "ASC" ? "DESC" : "ASC");
+				}
+				else
+				{
+					$(this).data("sortfield");
+					This.SortField = FieldClicked;
+				}
+				This.Populate();
+				return Common.PrvntEvtPropg();
+			});
+
+            if(This.RightToEdit == 1)
+            {
+                $(document).on('click', '.ClickToEdit', async function()
+                {
+                    This.IdSelected = $(this).data("id");
+                    $("#mycontainer").hide();
+                    $("#addcontainer").show();
+
+                    RetVal = await This.ExecuteProcedure(This.PageData.Source.QuerySelect);
+                    if(RetVal.HasRows)
+                    {
+                        $.each(This.PageData.AddEditContainer.Fields, function( index, value ) 
+                        {
+                            
+                            if(!value.IsEditable)
+                                $("#"+value.Id).attr("disabled", "disabled");
+                            $("#"+value.Id).val(RetVal.Data[value.DataId]);
+                        });
+                    }
+                    This.ViewFlag=1;
+                });
+            }
+            
+            $(".ButtonDelete").click(function ()
+			{
+				This.IdSelected = $(this).data("id");
+				Common.Confirm("Are you sure you want to delete?", function (ButtonClicked)
+				{
+					if (ButtonClicked == "Yes")
+					{
+                        RetVal = This.ExecuteProcedure(This.PageData.Source.QueryDelete);
+                        if(RetVal.HasError)
+                        {
+                            Common.Alert("Error", RetVal.ErrorMessage);
+                        }
+						This.Populate();
+					}
+				});
+				return Common.PrvntEvtPropg();
+            });    
+            
+            $(".ButtonRestore").click(function ()
+			{                
+				This.IdSelected = $(this).data("id");
+				Common.Confirm("Are you sure you want to Restore?", function (ButtonClicked)
+				{
+					if (ButtonClicked == "Yes")
+					{
+                        RetVal = This.ExecuteProcedure(This.PageData.Source.QueryRestore);
+                        if(RetVal.HasError)
+                        {
+                            Common.Alert("Error", RetVal.ErrorMessage);
+                        }
+						This.Populate();
+					}
+				});
+				return Common.PrvntEvtPropg();
+			});
+
+		};
+	}
+
+	var CurrentView = new ClsViewMasterfw_users();
+</script>

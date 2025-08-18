@@ -1,0 +1,49 @@
+<table role="grid" class="table table-striped table-bordered table-hover table-checkable dataTable1 text-center nowrap" style="width:100%">
+    <thead role="row">
+        <tr class="heading SortHeader TableHeader ui-state-highlight">
+            
+            {{#each TableHeaders.Columns}}
+                <th 
+                    class="{{#if IsSortable}}sorting ClickToSort{{/if}}" 
+                    style="max-width: none;" 
+                    {{#if IsSortable}}data-sortfield="{{Sortfield}}"{{/if}}
+                >
+                    {{HeaderLable}}
+                </th>
+            {{/each}}
+            {{#ifCond DeleteRight "1"}}
+                <th style="max-width: none;">Delete</th>
+            {{/ifCond}}
+        </tr>
+    </thead>
+    <tbody>
+        {{#each Data}}
+            {{#ifCond InActive "1"}}
+                <tr data-id="{{_id}}" class="ClickToEdit Deleted">
+            {{else}}
+                <tr data-id="{{_id}}" class="ClickToEdit">
+            {{/ifCond}}
+
+            {{#each ../TableHeaders.Columns}}
+                <td>{{lookup ../this Datafield}}</td>   
+            {{/each}}
+
+            {{#ifCond ../DeleteRight "1"}}
+                {{#ifCond InActive "1"}}
+                    <td>
+                        <button type="button" class="btn ui-button btn-sm ButtonRestore" data-id="{{id}}">
+                            <i class="fa fa-undo"></i>
+                        </button>
+                    </td>
+                {{else}}
+                    <td>
+                        <button type="button" class="btn ui-button btn-sm ButtonDelete" data-id="{{id}}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </td>
+                {{/ifCond}}
+            {{/ifCond}}
+        </tr>
+        {{/each}}
+    </tbody>
+</table>

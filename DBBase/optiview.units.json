@@ -1,0 +1,24 @@
+[{
+  "_id": 1,
+  "name": "GE Appliances",
+  "location": "HYD",
+  "address": "123 Finance St",
+  "is_deleted": false,
+  "modified": "admin,2024/12/02 12:05"
+},
+{
+  "_id": 2,
+  "name": "GE Aerospace",
+  "location": "LA",
+  "address": "456 HR Ave",
+  "is_deleted": false,
+  "modified": "2024/01/01 12:00"
+},
+{
+  "_id": 1733133707,
+  "name": "2",
+  "location": "3",
+  "address": "4",
+  "is_deleted": true,
+  "modified": "admin,2024/12/02 13:33"
+}]

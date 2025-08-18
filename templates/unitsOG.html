@@ -1,0 +1,485 @@
+
+<div id="PageContainer">
+    <div class="container" id="mycontainer">
+        <div class="row">
+            <div class="col-sm-12"> 
+                <p class="text-left h4 font-weight-light text-black-20 "><span id="PageHeading">List of Units</span><span id="PageSubHeading" class="h6 small"> Master Data</span></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col"> 
+                <div class="card ui-widget-header">
+                    <div class="card-body">
+                        <!-- add edit download pagination -->
+                        <div class="row m-0">
+                            <div class="col-md p-1 m-1">
+                                <div class="input-group">
+                                    <input class="form-control ui-state-default  border-end-0 border TextBoxSearch" type="text" placeholder="Search ...">
+                                    <span class="input-group-text btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas"><i class="fa fa-search"></i></span>
+                                </div>
+                            </div>
+                            <div class="col-md p-1 m-1 text-end">
+
+                                <!-- Pagination Content -->
+                                <button type="button" class="btn btn-sm ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas">
+                                    <a href="#" class="prev ButtonFirst"><i class="fa fa-backward"></i></a>
+                                </button>
+
+                                <button type="button" class="btn btn-sm ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas">
+                                    <a href="#" class="prev ButtonPrev"><i class="fa fa-play"
+                                                style=" -moz-transform: scale(-1, 1); -webkit-transform: scale(-1, 1); -o-transform: scale(-1, 1); -ms-transform: scale(-1, 1); transform: scale(-1, 1);"></i></a>
+                                </button>
+
+                                <button type="button" class="btn btn-sm ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas ">
+                                    <a href="#" class="btn-sm TextBoxPage" id="pulsate-once">1</a>
+                                </button>
+
+                                <button type="button" class="btn btn-sm ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas">
+                                    <a href="#" class="next ButtonNext"><i class="fa fa-play"></i></a>
+                                </button>
+
+                                <button type="button" class="btn btn-sm mr-1 ButtonPagination btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas">
+                                    <a href="#" class="next ButtonLast"><i class="fa fa-forward"></i></a>
+                                </button>
+
+                                <!-- Add button -->
+                                <button type="button" class="btn btn-sm ButtonAdd btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas" id="adddata">
+                                    <i class="fa fa-plus-circle"></i> 
+                                </button>
+
+                                <!-- <div class="btn btn-sm ml-1 ButtonExport btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas cta">
+                                    <a href="#" class="LinkExport"><i class="fa fa-download"></i></a>
+                                </div> -->
+
+                            </div>
+                        </div>
+
+                        <!-- table -->
+                        <div class="row m-0">
+                            <div class="col p-1 m-1 table-responsive TmplContentPlaceHolder">
+                            </div>
+                        </div>
+                    </div>               
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Container -->
+    <div class="container" id="addcontainer" style="display: none;">
+        <div class="row">
+            <div class="col-sm-12"> 
+                <p class="text-left h4 font-weight-light text-black-20 "><span id="AddEditPageHeading">Add Edit Units</span><span id="AddEditPageSubHeading" class="h6 small"> Master Data</span></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="card text-center mt-3 ui-widget-header">
+                    <div class="card-body" id="AddEditContainer">
+                        <div class="row mt-2">
+                            <div class="col p-1 m-1 text-end">
+                                <button type="button" class="btn btn-info btn-sm ButtonBack ui-state-default" id="backdata"><i class="fa fa-arrow-left"></i> </button>
+                                <button type="button" class="btn btn-info btn-sm ButtonSave ui-state-default"><i class="fa fa-save"></i> </button>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <label class="col-md-1"></label>
+                            <label class="col-md-2 font-weight-light text-black-20 ">Unit Id</label>
+                            <div class="col-md-7">
+                                <input id="_id" type="text" class="form-control input-medium ui-state-default" disabled />
+                            </div>
+                            <label class="col-md-2"></label>
+                        </div>
+                        <div class="row mt-2">
+                            <label class="col-md-1"></label>
+                            <label class="col-md-2 font-weight-light text-black-20 ">Name</label>
+                            <div class="col-md-7">
+                                <input id="TextBoxName" type="text" class="form-control input-medium ui-state-default" />
+                            </div>
+                            <label class="col-md-2"></label>
+                        </div>
+                        <div class="row mt-2">
+                            <label class="col-md-1"></label>
+                            <label class="col-md-2 font-weight-light text-black-20 ">Location</label>
+                            <div class="col-md-7">
+                                <input id="TextBoxLocation" type="text" class="form-control input-medium ui-state-default" />
+                            </div>
+                            <label class="col-md-2"></label>
+                        </div>
+                        <div class="row mt-2">
+                            <label class="col-md-1"></label>
+                            <label class="col-md-2 font-weight-light text-black-20 ">Address</label>
+                            <div class="col-md-7">
+                                <input id="TextBoxAddress" type="text" class="form-control input-medium ui-state-default"/>
+                            </div>
+                            <label class="col-md-2"></label>
+                        </div>
+                        <div class="row mt-2">
+                            <label class="col-md-1"></label>
+                            <label class="col-md-2 font-weight-light text-black-20 ">Modified</label>
+                            <div class="col-md-7">
+                                <input id="modified" type="text" class="form-control input-medium ui-state-default" disabled />
+                            </div>
+                            <label class="col-md-2"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% raw %}
+
+<script id="TmplList" type="text/x-handlebars-template">
+    <table role="grid" class="table table-striped table-bordered table-hover table-checkable dataTable1 text-center nowrap" style="width:100%">
+        <thead role="row">
+            <tr class="heading SortHeader TableHeader ui-state-highlight">
+                <th class="sorting ClickToSort" style="max-width: none;" data-sortfield="_id">Unit Id</th>
+                <th class="sorting ClickToSort" style="max-width: none;" data-sortfield="name">Name</th>
+                <th class="sorting ClickToSort" style="max-width: none;" data-sortfield="location">Location</th>
+                <th class="sorting ClickToSort" style="max-width: none;" data-sortfield="address">Address</th>
+                <th class="sorting ClickToSort" style="max-width: none;" data-sortfield="modified">Modified</th>
+                
+                {{#ifCond DeleteRight "1"}}
+                    <th style="max-width: none;">Delete</th>
+                {{/ifCond}}
+            </tr>
+        </thead>
+        <tbody>
+            {{#each Data}}
+                
+                {{#ifCond is_deleted true}}
+                    <tr data-id="{{_id}}" class="ClickToEdit Deleted">
+                {{else}}
+                    <tr data-id="{{_id}}" class="ClickToEdit">
+                {{/ifCond}}
+
+                <td>{{_id}}</td>
+                <td>{{name}}</td>
+                <td>{{location}}</td>
+                <td>{{address}}</td>
+                <td>{{modified}}</td>
+
+                {{#ifCond ../DeleteRight "1"}}
+                    {{#ifCond is_deleted true}}
+                        <td>
+                            <button type="button" href="" class="btn ui-button btn-sm ButtonRestore ui-state-default" data-id="{{id}}" data-userid="{{UserId__username}}">
+                                <i class="fa fa-undo"></i>
+                            </button>
+                        </td>
+                    {{else}}
+                        <td>
+                            <button type="button" href="" class="btn ui-button btn-sm ButtonDelete ui-state-default" data-id="{{id}}" data-userid="{{UserId__username}}">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    {{/ifCond}}
+                {{/ifCond}}
+                </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</script>
+
+
+<script>
+
+	function ClsViewMasterfw_users()
+	{
+        var This = this;
+
+        this.RightToAdd = "1";
+        this.RightToDelete = "1";
+        this.RightToEdit = "1";
+
+        this.ExportHeader = `<tr><td class="Header" colspan="5" style="text-align: left">TimeAndCriterion</td></tr>
+            <tr>
+                <td class="Header">Id</td>
+                <td class="Header">Name</td>
+                <td class="Header">Location</td>
+                <td class="Header">Address</td>
+                <td class="Header">Modified</td>
+            </tr>
+        `;
+
+        this.ViewFlag = 0;
+		this.IdSelected = "";
+        this.TmplList = {};
+        
+        this.GetRecordCount = true;
+        this.SortField = "Id";
+        this.SortDirection = "ASC";
+        this.Paginator = new ClsPaginator();
+        this.SelectedDateCurrent = new Date();
+
+        this.PageData = {
+            "Source" : {
+                "QueryCount":
+                {   "Name":"AllUnitCount",
+                    "Paramters":[".TextBoxSearch",GlbUsers.map(function(data){return data }).join(",")]
+                },
+                "QueryList":
+                {   "Name":"SelectAllUnits",
+                    "Paramters":[".TextBoxSearch", "This.SortField", "This.SortDirection", "This.Paginator.PageOffset", "This.Paginator.PageSize", GlbUsers.map(function(date){return date}).join(",")]
+                },
+                "QuerySelect":
+                {   "Name":"SelectUnit",
+                    "Paramters":["This.IdSelected"]
+                },
+                "QueryUpdate":
+                {   "Name":"UpdateUnit",
+                    "Paramters":["#TextBoxName","#TextBoxLocation","#TextBoxAddress","This.IdSelected"]
+                },
+                "QueryInsert":
+                {   "Name":"fw_CreateNewUnit",
+                    "Paramters":["#TextBoxName","#TextBoxLocation","#TextBoxAddress","This.IdSelected"]
+                },
+                "QueryDelete":
+                {   "Name":"fw_DeleteUnit",
+                    "Paramters":["This.IdSelected"]
+                },
+                "QueryRestore":
+                {   "Name":"fw_RestoreUnit",
+                    "Paramters":["This.IdSelected"]
+                }
+            },
+        };
+        
+        this.ExecuteProcedure = async function(value)
+        {
+            // Paramaters can be 
+            // 1. HTML tag value access by class name (.) or id (#)
+            // 2. Object variable
+            // 3. array
+            Paramters = value.Paramters.map(function(data)
+            {
+                if($.type(data) === "string")
+                {    
+                    if(data.startsWith("This")) 
+                    {
+                        data = data.replace("This.", "");
+                        if(data.includes("."))
+                        {
+                            return This[data.slice(0,data.indexOf("."))][data.slice(data.indexOf(".")+1)];
+                        }    
+                        return This[data];
+                    }
+                    else if(data.startsWith(".") || data.startsWith("#"))
+                    // else if(data.startsWith("$"))
+                    {
+                        return $(data).val();
+                        // return eval(data)
+                    } 
+                }
+                return data;
+            });
+
+            return new Promise((resolve, reject) => {
+                Requester.Send(value.Name, Paramters, function(Error, Data) {
+                    if (Error) 
+                    {
+                        console.log(Data);
+                        Common.showToast(Data, 'error');
+                        reject(Data);  // Reject the promise if there is an error
+                    } 
+                    else 
+                    {
+                        resolve(Data);  // Resolve the promise with Data
+                    }
+                });
+            });
+        };
+
+
+		this.Init = function (Params)
+		{
+
+			This.TmplList = Handlebars.compile($("#TmplList").html());
+            This.Paginator.Init(".ButtonPagination", ".PanelPagination", ".ButtonFirst", ".ButtonLast", ".ButtonPrev", ".ButtonNext", ".TextBoxPage",
+			function ()
+			{
+				This.Populate();
+			});
+
+            This.Paginator.SetPageSize(50);
+            
+			//Show ADD Container
+			$("#adddata").click(function()
+			{
+				$("#mycontainer").hide();
+                $("#addcontainer").show();
+                $("#AddEditContainer").find("input").removeAttr("disabled");
+			});
+
+			//Show Table Data 
+			$("#backdata").click(function()
+			{
+				$("#mycontainer").show();
+                $("#addcontainer").hide();
+
+                // Clear Data
+                $("#_id").val("");
+                $("#TextBoxAddress").val("");
+                $("#TextBoxLocation").val("");
+                $("#modified").val("");
+                $("#TextBoxName").val("");       
+			});
+
+            $(".ButtonSave").click(function ()
+            {
+                if (This.ViewFlag == 1)
+                {
+                    RetVal = This.ExecuteProcedure(This.PageData.Source.QueryUpdate);
+                }
+                else
+                {
+                    RetVal = This.ExecuteProcedure(This.PageData.Source.QueryInsert);
+                }
+                if (!RetVal.HasError)
+                {
+                    Common.showToast("Record saved successfully!","Success");
+                    $("#mycontainer").show();
+                    $("#addcontainer").hide();
+                }
+                else
+                {
+                    Common.showToast("Could not save data.", "Error");
+                }
+                This.ViewFlag = 0;
+                    
+                This.Populate();
+                return Common.PrvntEvtPropg();
+            });
+
+            $(".TextBoxSearch").on("keyup", function ()
+            {
+                This.GetRecordCount = true;
+                This.Populate();
+                return Common.PrvntEvtPropg();
+            });
+   
+            $(".ButtonExport").click(function ()
+            {
+                var Header = This.ExportHeader.replace('TimeAndCriterion', This.PageData.DisplayContainer.Heading+' Generated On: ' + new Date().toString("dd/mm/yyyy hh:nn:ss") + ' [Search Text: "' + $(".TextBoxSearch").val() + '"]');
+                var RetVal = GlbServer.ExportToExcel(This.PageData.Source.QueryList.Name, $(".TextBoxSearch").val(), This.SortField, This.SortDirection, This.Paginator.PageOffset, This.Paginator.TotalRecords,GlbUsers.map(function(data){return "<Apostrophe>" + data + "<Apostrophe>";}).join(","), Header);
+                var $ExportLink = $(".LinkExport");
+ 
+                $ExportLink.attr("href", "./Downloads/" + RetVal.Data);
+                $ExportLink[0].click();
+            });
+            
+             This.Populate();
+		};
+
+		this.Populate = async function (GivenMode)
+		{
+            if (This.GetRecordCount)
+			{
+				RetVal = await This.ExecuteProcedure(This.PageData.Source.QueryCount);
+				This.Paginator.SetTotalRecords(RetVal.Data.TotalRecords);
+                This.GetRecordCount = false;
+			}
+            
+            RetVal = await This.ExecuteProcedure(This.PageData.Source.QueryList);
+            Data = {};
+            Data["Data"] = RetVal.Data;
+            Data["DeleteRight"] = This.RightToDelete;
+            $(".TmplContentPlaceHolder").html(This.TmplList(Data));
+            
+            $(".SortHeader th").removeClass("sorting_asc").removeClass("sorting_desc");
+			$(".SortHeader").find("[data-sortfield='" + This.SortField + "']").addClass(This.SortDirection == "ASC" ? "sorting_asc" : "sorting_desc");
+
+			if (This.Paginator.TotalRecords > This.Paginator.PageSize)
+			{
+				$(".ButtonPagination").show();
+			}
+			else
+			{
+				$(".ButtonPagination").hide();
+            }
+            
+            $(".ClickToSort").click(function ()
+			{
+				var FieldClicked = $(this).data("sortfield");
+			
+				if (This.SortField == FieldClicked)
+				{
+					This.SortDirection = (This.SortDirection == "ASC" ? "DESC" : "ASC");
+				}
+				else
+				{
+					$(this).data("sortfield");
+					This.SortField = FieldClicked;
+				}
+				This.Populate();
+				return Common.PrvntEvtPropg();
+			});
+
+            $(".ButtonDelete").click(function ()
+			{
+                
+				This.IdSelected = $(this).closest('tr').data("id");
+				Common.Confirm("Are you sure you want to delete?", async function(ButtonClicked)
+				{
+					if (ButtonClicked == "Yes")
+					{
+                        RetVal = await This.ExecuteProcedure(This.PageData.Source.QueryDelete);
+                        if(RetVal.HasError)
+                        {
+                            Common.showToast( RetVal.ErrorMessage, "Error");
+                        }
+						This.Populate();
+					}
+				});
+				return Common.PrvntEvtPropg();
+            });    
+            
+            $(".ButtonRestore").click(function ()
+			{                
+				This.IdSelected = $(this).closest('tr').data("id");
+				Common.Confirm("Are you sure you want to Restore?", async function(ButtonClicked)
+				{
+					if (ButtonClicked == "Yes")
+					{
+                        RetVal = await This.ExecuteProcedure(This.PageData.Source.QueryRestore);
+                        if(RetVal.HasError)
+                        {
+                            Common.showToast( RetVal.ErrorMessage, "Error");
+                        }
+						This.Populate();
+					}
+				});
+				return Common.PrvntEvtPropg();
+			});
+
+
+            if(This.RightToEdit == 1)
+            {
+                $(".ClickToEdit").click(async function()
+                {
+                    This.IdSelected = $(this).data("id");
+                    $("#mycontainer").hide();
+                    $("#addcontainer").show();
+
+                    RetVal = await This.ExecuteProcedure(This.PageData.Source.QuerySelect);
+                    if(RetVal.HasRows)
+                    {
+                        $("#_id").val(RetVal.Data["_id"]);
+                        $("#TextBoxAddress").val(RetVal.Data["address"]);
+                        $("#TextBoxLocation").val(RetVal.Data["location"]);
+                        $("#modified").val(RetVal.Data["modified"]);
+                        $("#TextBoxName").val(RetVal.Data["name"]);
+                    }
+                    This.ViewFlag=1;
+                });
+            }
+            
+            
+		};
+	}
+
+	var CurrentView = new ClsViewMasterfw_users();
+</script>
+
+{% endraw %}

@@ -1,0 +1,12 @@
+{{#each this}}
+<div class="row mt-2" {{#unless IsDisplayed}} style="display:none;" {{/unless}}>
+    <label class="col-md-1"></label>
+    <label class="col-md-2 font-weight-light text-black-20 ">{{Label}}</label>
+    <div class="col-md-7">
+        <input id="{{Id}}" type="{{DataType}}" class="form-control input-medium ui-state-default" 
+        {{#unless IsEditable}} disabled {{/unless}}
+        {{#if IsRequired}} require {{/if}} />
+    </div>
+    <label class="col-md-2"></label>
+</div>
+{{/each}}

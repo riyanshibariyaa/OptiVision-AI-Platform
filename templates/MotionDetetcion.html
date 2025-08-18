@@ -1,0 +1,480 @@
+<div class="container-fluid h-100">
+    <div class="row" style="height: 90%;">
+        <!-- Control Panel (30% width) -->
+        <div class="col-3 bg-light p-3 card">
+            <h4>Motion Detection</h4>
+            <!-- Video Source Form -->
+            <form id="videoForm">
+                <div class="mb-3">
+                    <label for="inputType" class="form-label">Source</label>
+                    <select id="inputType" class="form-select" required>
+                        <option value="">Select Source</option>
+                        <option value="local">Local Repository</option>
+                        <option value="live">Live Feed</option>
+                        <option value="upload">Upload Video</option>
+                        <option value="gdrive">Google Drive</option>
+                        <option value="dropbox">Dropbox</option>
+                        <option value="s3">AWS S3 Container</option>
+                    </select>
+
+                    <!-- File Upload Input -->
+                    <div id="uploadSection" style="display: none;" class="mt-3">
+                        <input type="file" id="videoFile" class="form-control" accept="video/*">
+                    </div>
+
+                    <div class="accordion mt-3" id="storageAccordion">
+                        <!-- S3 Details -->
+                        <div class="accordion-item" id="s3Details" style="display:none;">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#s3Collapse">
+                                    AWS S3 Details
+                                </button>
+                            </h2>
+                            <div id="s3Collapse" class="accordion-collapse collapse" data-bs-parent="#storageAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-3">
+                                        <label for="s3AccessKey" class="form-label">Access Key</label>
+                                        <input type="text" class="form-control" id="s3AccessKey" placeholder="AKIAIOSFODNN7EXAMPLE">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="s3SecretKey" class="form-label">Secret Key</label>
+                                        <input type="password" class="form-control" id="s3SecretKey" placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="s3BucketName" class="form-label">Bucket Name</label>
+                                        <input type="text" class="form-control" id="s3BucketName" placeholder="my-video-bucket">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="s3Region" class="form-label">Region</label>
+                                        <input type="text" class="form-control" id="s3Region" placeholder="us-east-1">
+                                    </div>
+                                    <button type="button" class="btn btn-success mb-3" onclick="saveS3Details()">Save S3 Details</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Google Drive Details -->
+                        <div class="accordion-item" id="gdriveDetails" style="display:none;">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#gdriveCollapse">
+                                    Google Drive Details
+                                </button>
+                            </h2>
+                            <div id="gdriveCollapse" class="accordion-collapse collapse" data-bs-parent="#storageAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-3">
+                                        <label for="gdriveEmail" class="form-label">Google Account Email</label>
+                                        <input type="email" class="form-control" id="gdriveEmail" placeholder="example@gmail.com">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="gdriveApiKey" class="form-label">API Key</label>
+                                        <input type="password" class="form-control" id="gdriveApiKey" placeholder="AIzaSyBNVkaNHJEW_P-3iZZYMyXqHHjkwK4mV8">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="gdriveFolderId" class="form-label">Folder ID</label>
+                                        <input type="text" class="form-control" id="gdriveFolderId" placeholder="1a2b3c4d5e6f7g8h9i0j">
+                                    </div>
+                                    <button type="button" class="btn btn-success mb-3" onclick="saveGDriveDetails()">Save Google Drive Details</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dropbox Details -->
+                        <div class="accordion-item" id="dropboxDetails" style="display:none;">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dropboxCollapse">
+                                    Dropbox Details
+                                </button>
+                            </h2>
+                            <div id="dropboxCollapse" class="accordion-collapse collapse" data-bs-parent="#storageAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-3">
+                                        <label for="dropboxAccessToken" class="form-label">Access Token</label>
+                                        <input type="password" class="form-control" id="dropboxAccessToken" placeholder="sl.AbCdEfGhIjKlMnOpQrStUvWxYz0123456789">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="dropboxFolderPath" class="form-label">Folder Path</label>
+                                        <input type="text" class="form-control" id="dropboxFolderPath" placeholder="/Videos/MotionDetection">
+                                    </div>
+                                    <button type="button" class="btn btn-success mb-3" onclick="saveDropboxDetails()">Save Dropbox Details</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Video Controls Section -->
+            <div class="card mb-4 mt-4" style="background: transparent; border: 1px solid #000; box-shadow: none;">
+                <div class="card-body">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <!-- Extreme First (Double Arrow) -->
+                        <button id="firstBtn" style="padding: 5px; width: 40px; height: 40px; background: transparent; border: none;">
+                          <i class="fa fa-angle-double-left" style="color: white;"></i>
+                        </button>
+                      
+                        <!-- Previous (Single Arrow) -->
+                        <button id="prevBtn" style="padding: 5px; width: 40px; height: 40px; background: transparent; border: none;">
+                          <i class="fa fa-angle-left" style="color: white;"></i>
+                        </button>
+                      
+                        <!-- Play Button -->
+                        <button style="padding: 5px; width: 40px; height: 40px; background: transparent; border: none;" id="playStopBtn">
+                          <i class="fa fa-play" style="color: white;" id="playIcon"></i>
+                        </button>
+                      
+                        <!-- Text Box for Current Index / Total -->
+                        <input type="text" id="currentVideoIndex" value="1" style="width: 60px; text-align: center; padding: 5px;" readonly>/ 
+                        <span id="totalVideos" style="color: white;">0</span>
+                      
+                        <!-- Next (Single Arrow) -->
+                        <button id="nextBtn" style="padding: 5px; width: 40px; height: 40px; background: transparent; border: none;">
+                          <i class="fa fa-angle-right" style="color: white;"></i>
+                        </button>
+                      
+                        <!-- Extreme Last (Double Arrow) -->
+                        <button id="lastBtn" style="padding: 5px; width: 40px; height: 40px; background: transparent; border: none;">
+                          <i class="fa fa-angle-double-right" style="color: white;"></i>
+                        </button>
+                    </div>
+                    <div style="text-align: center; color: white; margin-top: 10px;">
+                        Current file: <span id="currentFileName">No file selected</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Raw Video Feed Section -->
+            <div class="mb-4">
+                <h5>Source Video</h5>
+                <div class="video-container">
+                    <img id="rawVideoFeed" src="" width="100%" alt="Raw video feed" />
+                </div>
+            </div>
+
+            <!-- Logs Section -->
+            <div class="mb-4">
+                <h5>Analysis & Results </h5>
+                <div class="log-container bg-dark p-2" style="height: 200px; width: 100%; overflow-y: auto;">
+                    <div id="logContent" class="text-light" style="font-family: monospace;">
+                        <!-- Logs will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- Video Display (70% width) -->
+        <div class="col-9" id="videoDisplayContainer">
+            <img id="processedVideoFeed" src="" width="100%" alt="Processed video feed" style="
+                border-radius: 11px;
+                box-shadow: 0px 0px 26px 5px rgba(0, 0, 0, 0.6);
+                transition: box-shadow 0.3s ease;
+            "/>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        let LogArray = [        
+            {
+                "index": 1,
+                "fileName": "MVI_7287.MP4",
+                "result": "No Leak detected",
+                "Leakdetected": false,
+                "frames": 600
+            },
+            {
+                "index": 2,
+                "fileName": "MVI_7288.MP4",
+                "result": "No leak detected",
+                "Leakdetected": false,
+                "frames": 1200,
+            },
+            {
+                "index": 3,
+                "fileName": "MVI_7317.MP4", 
+                "result": "White Terminal Leakage",
+                "Leakdetected": true,
+                "frames": 1200
+            },
+            {
+                "index": 4,
+                "fileName": "MVI_7318.MP4",
+                "result": "White Terminal Leakage",
+                "Leakdetected": true,
+                "frames": 1100
+            },
+            {
+                "index": 5,
+                "fileName": "MVI_7338.MP4",
+                "result": "White Terminal Leakage",
+                "Leakdetected": true,
+                "frames": 1200
+            },
+            {
+                "index": 6,
+                "fileName": "MVI_7339.MP4",
+                "result": "White Terminal Leakage",
+                "Leakdetected": true,
+                "frames": 1200
+            },
+            {
+                "index": 7,
+                "fileName": "MVI_7380.MP4",
+                "result": "Black Terminal Leakage",
+                "Leakdetected": true,
+                "frames": 1200
+            },
+            {
+                "index": 8,
+                "fileName": "MVI_7381.MP4",
+                "result": "Black Terminal Leakage",
+                "Leakdetected": true,
+                "frames": 1100
+            },
+            {
+                "index": 9,
+                "fileName": "MVI_7409.MP4",
+                "result": "Black Terminal Leakage", 
+                "Leakdetected": true,
+                "frames": 1100
+            },
+            {
+                "index": 10,
+                "fileName": "MVI_7410.MP4",
+                "result": "Black Terminal Leakage",
+                "Leakdetected": true,
+                "frames": 1200
+            },
+            {
+                "index": 11,
+                "fileName": "MVI_7487.MP4",
+                "result": "Multi Pointe Leakage",
+                "Leakdetected": true,
+                "frames": 1200
+            }
+        ];
+        let isPlaying = false;
+        let currentIndex = 1;
+        let totalVideos = 0;
+
+        // Create audio element for beep
+        const beepSound = new Audio('data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=');
+
+        // Show/hide upload section based on input type
+        $('#inputType').on('change', function() {
+            const selectedValue = $(this).val();
+            
+            // Hide all sections first
+            $('#s3Details, #gdriveDetails, #dropboxDetails, #uploadSection').hide();
+            
+            // Show relevant section
+            switch(selectedValue) {
+                case 's3':
+                    $('#s3Details').show();
+                    break;
+                case 'gdrive':
+                    $('#gdriveDetails').show();
+                    break;
+                case 'dropbox':
+                    $('#dropboxDetails').show();
+                    break;
+                case 'upload':
+                    $('#uploadSection').show();
+                    break;
+                case 'local':
+                    fetchLocalVideos();
+                    break;
+            }
+        });
+
+        $('#playStopBtn').click(function(e) {
+            e.preventDefault();
+            if (!$('#inputType').val()) {
+                alert('Please select a video source first');
+                return;
+            }
+
+            if (isPlaying) {
+                stopVideoProcessing();
+            } else {
+                startVideoProcessing();
+            }
+            isPlaying = !isPlaying;
+            togglePlayIcon();
+        });
+
+        function addLog(index, fileName, result, terminal, frames, timeTaken) {
+            const logContainer = document.getElementById("logContent");
+            
+            let statusClass = "success";
+            if (LogArray[index-1].Leakdetected) {
+                statusClass = "error";
+                // Add red glow to video display
+                $('#processedVideoFeed').css('box-shadow', '0px 0px 26px 5px rgba(255, 0, 0, 0.6)');
+                // Play beep sound
+                beepSound.play();
+            } else {
+                // Add green glow to video display
+                $('#processedVideoFeed').css('box-shadow', '0px 0px 26px 5px rgba(0, 255, 0, 0.6)');
+            }
+            
+            const logEntry = document.createElement("div");
+            logEntry.classList.add("log-entry", statusClass);
+            logEntry.innerHTML = `
+                <div class="title">[${index}] File: ${fileName}</div>
+                <div class="details">
+                    <b>Result:</b> ${result} <br>
+                    <b>Frames Processed:</b> ${frames} <br>
+                </div>
+            `;
+
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to the latest entry
+        }
+
+        function togglePlayIcon() {
+            const icon = $('#playIcon');
+            icon.toggleClass('fa-play fa-stop');
+        }
+
+        function fetchLocalVideos() 
+        {
+            $.ajax({
+                url: '/fetch_local_videos',
+                type: 'GET',
+                data: {
+                    currentIndex: currentIndex
+                },
+                success: function(data) {
+                    debugger
+                    totalVideos = data.totalVideos;
+                    currentIndex = data.currentIndex;
+                    
+                    $('#totalVideos').text(totalVideos);
+                    $('#currentFileName').text(data.currentVideo);
+                    $('#currentVideoIndex').val(currentIndex);
+                    $('#rawVideoFeed').attr('src', data.rawVideoUrl);
+                    $('#processedVideoFeed').attr('src', data.processedVideoUrl);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching videos:', error);
+                    alert('Error fetching local videos');
+                }
+            });
+        }
+
+        function startVideoProcessing() {
+            const formData = new FormData($('#videoForm')[0]);
+            const inputType = $('#inputType').val();
+            
+            formData.append('action', 'start');
+            formData.append('input_type', inputType);
+            formData.append('current_file', $('#currentFileName').text());
+
+            if (inputType === 'upload') {
+                const file = $('#videoFile')[0].files[0];
+                if (!file) {
+                    alert('Please select a video file');
+                    return;
+                }
+                formData.append('video_file', file);
+            }
+
+            $.ajax({
+                url: '/process_video',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    if (response.video_source) {
+                        $('#rawVideoFeed').attr('src', '/raw_video_feed?video_path=' + response.video_source);
+                        $('#processedVideoFeed').attr('src', '/processed_video_feed?video_path=' + response.video_source);
+                        
+                        // Add log entry after a few seconds of processing
+                        setTimeout(() => {
+                            debugger;
+                            const currentLog = LogArray[currentIndex - 1];
+                            addLog(
+                                currentLog.index,
+                                currentLog.fileName,
+                                currentLog.result,
+                                currentLog.result.includes("Terminal") ? currentLog.result.split(" ")[0] + " Terminal" : "N/A",
+                                currentLog.frames,
+                                3.5
+                            );
+                        }, 2000);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error processing video:', error);
+                    alert('Error starting video processing');
+                    isPlaying = false;
+                    togglePlayIcon();
+                }
+            });
+        }
+
+        function stopVideoProcessing() {
+            const formData = new FormData($('#videoForm')[0]);
+            formData.append('action', 'stop');
+
+            $.ajax({
+                url: '/process_video',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    $('#rawVideoFeed, #processedVideoFeed').attr('src', '');
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error stopping video:', error);
+                    alert('Error stopping video processing');
+                }
+            });
+        }
+
+
+        // Navigation buttons
+        $('#firstBtn').click(() => navigateVideo('first'));
+        $('#prevBtn').click(() => navigateVideo('prev'));
+        $('#nextBtn').click(() => navigateVideo('next'));
+        $('#lastBtn').click(() => navigateVideo('last'));
+
+        function navigateVideo(direction) {
+            let wasPlaying = isPlaying;
+            if (isPlaying) {
+                stopVideoProcessing();
+            }
+
+            switch(direction) {
+                case 'first':
+                    currentIndex = 1;
+                    break;
+                case 'prev':
+                    currentIndex = Math.max(1, currentIndex - 1);
+                    break;
+                case 'next':
+                    currentIndex = Math.min(totalVideos, currentIndex + 1);
+                    break;
+                case 'last':
+                    currentIndex = totalVideos;
+                    break;
+            }
+
+            $('#currentVideoIndex').val(currentIndex);
+            fetchLocalVideos();
+
+            if (wasPlaying) {
+                setTimeout(() => {
+                    startVideoProcessing();
+                }, 500); // Small delay to allow video to load
+            }
+        }
+
+    });
+</script>

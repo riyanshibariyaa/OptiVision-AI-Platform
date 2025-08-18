@@ -1,0 +1,21 @@
+{{#Menus}}
+<li class="{{#if HasSubMenu}} HasSubMenu {{else}} HasNoSubMenu {{/if}} parent-menu nav-item {{#if IsOpen}} active {{/if}} ">
+    <a id="{{MenuId}}" href="#{{Link}}" class="nav-link nav-toggle ui-state-default"  data-bs-toggle="{{#if HasSubMenu}}collapse{{/if}}" data-bs-target="#{{TrimWhitespace Title}}">
+        <i class="{{IconClass}}"></i>
+        <span class="title">{{Title}}</span>
+        {{#if HasSubMenu}}<span class="Arrow {{#if IsOpen}} fas fa-angle-down {{else}}fas fa-angle-down{{/if}} pull-right"></span>{{/if}}
+    </a>
+    {{#if HasSubMenu}}
+    <ul id="{{TrimWhitespace Title}}" class="sub-menu collapse navbar-nav ui-menu ui-widget-content">
+        {{#SubMenu}}
+        <li class="HasNoSubMenu nav-item {{#if IsOpen}} active {{/if}} ui-menu-item">
+            <a id="{{MenuId}}" href="#{{Link}}" class="nav-link" style="color: inherit;">
+                <i class="{{IconClass}}"></i>
+                <span class="title">{{Title}}</span>
+            </a>
+        </li>
+        {{/SubMenu}}
+    </ul>
+    {{/if}}
+</li>
+{{/Menus}}

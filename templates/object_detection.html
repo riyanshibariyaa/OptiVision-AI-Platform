@@ -1,0 +1,257 @@
+
+    <div class="container-fluid mt-4">
+        <h1 class="mb-4">Object Detection</h1>
+        
+        <!-- Source Selection Tabs -->
+        <ul class="nav nav-tabs" id="sourceTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">Upload</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="webcam-tab" data-bs-toggle="tab" data-bs-target="#webcam" type="button" role="tab">Webcam</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="sourceTabContent">
+            <!-- Upload Tab -->
+            <div class="tab-pane fade show active" id="upload" role="tabpanel">
+                <div class="row">
+                    <!-- Control Panel (Left Side) -->
+                    <div class="col-md-4 control-panel">
+                        <div class="card mb-4">
+                            <div class="card-header">Upload File</div>
+                            <div class="card-body">
+                                <form id="upload-form" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <input class="form-control" type="file" id="file-input" accept="image/*,video/*">
+                                        <div class="form-text">Supported formats: JPG, PNG, MP4, AVI</div>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" id="upload-btn">Upload</button>
+                                </form>
+                                
+                                <div class="loading-spinner" id="upload-spinner">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p>Uploading file...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Model Selection</div>
+                            <div class="card-body">
+                                <select class="form-select" id="model-select">
+                                    <option value="YOLOv8" selected>YOLOv8</option>
+                                    <option value="YOLOv5">YOLOv5</option>
+                                    <option value="SSD MobileNet">SSD MobileNet</option>
+                                    <option value="Faster R-CNN">Faster R-CNN</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Detection Settings</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="confidence-threshold" class="form-label">Confidence Threshold: <span id="confidence-value">0.5</span></label>
+                                    <input type="range" class="form-range" id="confidence-threshold" min="0.1" max="0.9" step="0.05" value="0.5">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show-boxes" checked>
+                                        <label class="form-check-label" for="show-boxes">Show Bounding Boxes</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show-labels" checked>
+                                        <label class="form-check-label" for="show-labels">Show Labels</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show-confidence" checked>
+                                        <label class="form-check-label" for="show-confidence">Show Confidence</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Class Filters</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="filter-classes" checked>
+                                        <label class="form-check-label" for="filter-classes">Filter Classes</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="class-filter-container" id="class-filter-list">
+                                    <!-- Class filters will be dynamically added here -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="class-person" checked>
+                                        <label class="form-check-label" for="class-person">Person</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="class-car" checked>
+                                        <label class="form-check-label" for="class-car">Car</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="class-dog" checked>
+                                        <label class="form-check-label" for="class-dog">Dog</label>
+                                    </div>
+                                    <!-- More classes will be loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Log</div>
+                            <div class="card-body">
+                                <div class="log-window" id="log-window">
+                                    <!-- Log messages will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Display Panel (Right Side) -->
+                    <div class="col-md-8 display-panel">
+                        <div class="detection-container">
+                            <div id="image-container" style="display: none;">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <span id="image-title">Image</span>
+                                        <button class="btn btn-sm btn-primary float-end" id="detect-image-btn">Detect Objects</button>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <img id="image-display" class="image-display" src="" alt="Uploaded image">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="video-container" style="display: none;">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <span id="video-title">Video</span>
+                                        <div class="float-end">
+                                            <button class="btn btn-sm btn-primary" id="detect-video-btn">Start Detection</button>
+                                            <button class="btn btn-sm btn-secondary" id="stop-video-btn" disabled>Stop</button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <img id="video-display" class="video-feed" src="" alt="Video stream">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="detection-info" id="detection-info" style="display: none;">
+                            <h5>Detection Results</h5>
+                            <div id="detection-stats"></div>
+                            <div id="download-container" style="display: none;">
+                                <a id="download-link" class="btn btn-success mt-2" href="#" target="_blank">Download Processed File</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Webcam Tab -->
+            <div class="tab-pane fade" id="webcam" role="tabpanel">
+                <div class="row">
+                    <!-- Control Panel (Left Side) -->
+                    <div class="col-md-4 control-panel">
+                        <div class="card mb-4">
+                            <div class="card-header">Webcam Control</div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" id="start-webcam-btn">Start Webcam</button>
+                                    <button class="btn btn-primary" id="start-detection-btn" disabled>Start Detection</button>
+                                    <button class="btn btn-secondary" id="stop-webcam-btn" disabled>Stop</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Model Selection</div>
+                            <div class="card-body">
+                                <select class="form-select" id="webcam-model-select">
+                                    <option value="YOLOv8" selected>YOLOv8</option>
+                                    <option value="YOLOv5">YOLOv5</option>
+                                    <option value="SSD MobileNet">SSD MobileNet</option>
+                                    <option value="Faster R-CNN">Faster R-CNN</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Detection Settings</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="webcam-confidence-threshold" class="form-label">Confidence Threshold: <span id="webcam-confidence-value">0.5</span></label>
+                                    <input type="range" class="form-range" id="webcam-confidence-threshold" min="0.1" max="0.9" step="0.05" value="0.5">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="webcam-show-boxes" checked>
+                                        <label class="form-check-label" for="webcam-show-boxes">Show Bounding Boxes</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="webcam-show-labels" checked>
+                                        <label class="form-check-label" for="webcam-show-labels">Show Labels</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="webcam-show-confidence" checked>
+                                        <label class="form-check-label" for="webcam-show-confidence">Show Confidence</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">Log</div>
+                            <div class="card-body">
+                                <div class="log-window" id="webcam-log-window">
+                                    <!-- Log messages will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Display Panel (Right Side) -->
+                    <div class="col-md-8 display-panel">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <span>Webcam Feed</span>
+                            </div>
+                            <div class="card-body text-center">
+                                <video id="webcam-video" class="video-feed" autoplay muted></video>
+                                <canvas id="webcam-canvas" class="video-feed" style="display: none;"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="detection-info" id="webcam-detection-info" style="display: none;">
+                            <h5>Detection Results</h5>
+                            <div id="webcam-detection-stats"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    <script src="static\js\object_detection.js"></script>

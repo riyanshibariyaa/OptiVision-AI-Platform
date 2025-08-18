@@ -1,0 +1,75 @@
+[{
+  "_id": 1,
+  "name": "Admin",
+  "user_id": "admin",
+  "designation": "Adminstrator",
+  "email": "admin@fw.com",
+  "photo": "admin.jpg",
+  "address": "123 Maple St",
+  "dob": {
+    "$date": "1990-01-01T00:00:00.000Z"
+  },
+  "password": {
+    "$binary": {
+      "base64": "JDJiJDEyJFhOVXJnV0p3OHFVeWJjaDBHM2dDZmVqWUE4NGlnTTBIanlnbVZLUko4VGhrYXFjZnZuNmxP",
+      "subType": "00"
+    }
+  },
+  "accessible_units": [
+    {
+      "unit_id": 1,
+      "menus": [
+        1,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "unit_id": 2,
+      "menus": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  ],
+  "is_deleted": false,
+  "modified": "2024/01/01 12:00"
+},
+{
+  "_id": 2,
+  "name": "Guest",
+  "user_id": "guest",
+  "designation": "Guest",
+  "email": "guest@fw.com",
+  "photo": "guest.jpg",
+  "address": "456 Oak St",
+  "dob": {
+    "$date": "2000-01-01T00:00:00.000Z"
+  },
+  "password": {
+    "$binary": {
+      "base64": "JDJiJDEyJHU3aFJlODBZTDVyL242aDlnTEczcWVoMTdkWDR3Zi4wa2p1RXhwM0JCd29kM2o1T1ZwR2Nt",
+      "subType": "00"
+    }
+  },
+  "accessible_units": [
+    {
+      "unit_id": 2,
+      "menus": [
+        1,
+        2,
+        3
+      ]
+    }
+  ],
+  "is_deleted": false,
+  "modified": "2024/01/01 12:00"
+}]

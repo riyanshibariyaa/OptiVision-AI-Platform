@@ -1,0 +1,88 @@
+<!-- templates/home.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Home</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="static/images/logosmall.png" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+	<link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="static/fw/css/MainCommon.css">
+    
+</head>
+<body>
+    <!-- Header Bar -->
+	<nav class="navbar navbar-expand-lg sticky-top FW-Bar">
+		<div class="container-fluid">
+            <div class="sidebar-toggler p-1" style="display: inline-block;">
+                <span class="fas fa-bars ml-1 text-secondary" style="font-size: 25px;" data-bs-toggle="collapse" data-bs-target="#sidebar, #mainContainer" aria-controls="sidebar, mainContainer" aria-expanded="false" aria-label="Toggle sidebar"></span>
+            </div>  
+
+			<div class="Logos d-flex">
+                <h2 class="mb-4" style="font-size: 50px;font-weight: 700;">OptiView</h2>
+				<!-- <img class="LogoXibit" src="/static/images/logo.png"/>
+				<div class="Separator"></div>
+				<img class="LogoTechM" src="/static/images/logo.png"/> -->
+			</div>
+  
+			<div class="ms-auto d-flex">
+				<button class="btn btn-outline-secondary ms-2 BtnTheme XibitNavIconFas" type="button">
+					<i class="fas fa-brush"></i>
+				</button>
+				<button class="btn btn-outline-danger ms-2 XibitNavIconFas" type="button">
+					<a href="/">
+						<i class="fas fa-right-from-bracket"></i>
+					</a>
+				</button>
+			</div>
+		</div>
+	</nav>
+    <div class="page-container-wrapper container-fluid">
+        <div class="row page-container">
+            <div id="sidebar" class="side-bar ui-widget-header collapse collapse-horizontal show">
+                <div style="width: 100%;">
+                    <select class="ui-state-default" id="UniteSelection"  style="width: 100%;padding: 10px;">
+                    </select>
+                </div>
+                <div class="side-menu mt-5"> 
+                    <ul id="page-sidebar-menu" class="navbar-nav">
+                    </ul>
+                </div>
+            </div>
+            <div id="mainContainer" class="main-container pt-3 p-2 collapse collapse-horizontal show"></div>
+        </div>
+    </div>
+
+
+    <script src="/static/js/jquery-3.6.0.min.js"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/handlebars.js"></script>
+    <script src="/static/fw/js/RequestAdapter.js"></script>
+    <script src="/static/fw/js/Common.js"></script>
+    <script src="/static/fw/js/AppStart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    
+    <script>
+        $(document).ready(function() 
+        {
+            // Check for JWT token in local storage
+            const token = localStorage.getItem("token");
+            if (!token) 
+            {
+                // Redirect to login if no token is found
+                window.location.href = "/";
+            }
+
+            // Handle dynamic menu clicks
+            $(document).on('click', '.menu-item', function() {
+                const menu = $(this).text();
+                $("#viewContainer").load(`/menu/${menu}`);
+            });
+        });
+    </script>
+</body>
+</html>

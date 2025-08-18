@@ -1,0 +1,77 @@
+<!-- templates/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Login</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="static/images/logosmall.png" />
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" type="text/css" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="static/fw/css/Login.css">
+</head>
+<body class="bg-light">
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="LoginCard card shadow" style="width: 350px;">
+            <div class="card-body text-center">
+                <!-- <img src="static/images/logo.png" alt="Company Logo" class="img-fluid mb-4" style="max-width: 150px;"> -->
+                <h2 class="mb-4" style="font-size: 50px;font-weight: 700;">OptiView</h2>
+                <h2 class="mb-4">Sign In</h2>
+                <form id="LoginForm">  
+                    <div class="mb-3">
+                        <input type="text" id="UserId" name="username" class="form-control" placeholder="Username" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" id="Password" name="password" class="form-control" placeholder="Password" required>
+                    </div>
+                    <button type="button" class="btn btn-primary w-100 ButtonLogin">Login</button>	   
+                    <div class="text-danger mt-3" id="errorMessage"></div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                &copy; 2024 Company Name
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/jquery-3.6.0.min.js"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/fw/js/Common.js"></script>
+    <script src="/static/fw/js/RequestAdapter.js"></script>
+    <script>
+        $(function() 
+        {
+            //on "Enter" initiate login process
+            $("body").bind("keydown", function (event)
+            {
+                if ((event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode)) == 13)
+                {
+                    $(".ButtonLogin").click();
+                }
+            });
+
+            $(".ButtonLogin").click(function(event) 
+            {
+                event.preventDefault();
+                var Id = "login";
+                var Data = {UserId: $("#UserId").val(), Password: $("#Password").val()};
+                console.log(1);
+                Requester.Send(Id, Data, function(Error, Data)
+                {
+                    if (Error)
+                    {
+                        console.log(Data);
+                        Common.showToast(Data,'error');
+                    }   
+                    else
+                    {
+                        localStorage.setItem("token", Data.access_token);
+                        window.location.href = "/home";
+                    } 
+                });    
+            });
+        });
+    </script>
+</body>
+</html>
