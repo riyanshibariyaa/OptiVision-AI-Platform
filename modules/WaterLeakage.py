@@ -1,6 +1,6 @@
 """
-Quick Fix for Water Leak Detection Issues
-This makes the algorithm more sensitive to actual water leaks while maintaining accuracy
+WaterLeakage.py - Complete Water Leak Detection Module
+Fixed version with actual leak detection algorithm and proper integration
 """
 
 import cv2
@@ -20,280 +20,191 @@ leak_detection_enabled = True
 current_sensitivity = 75
 leak_count = 0
 uptime_start = None
+detector = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class BalancedWaterLeakDetector:
-    """Balanced water leak detector - more sensitive to actual leaks"""
+class WaterLeakDetector:
+    """Advanced water leak detection using computer vision"""
     
     def __init__(self, sensitivity=75):
         self.sensitivity = sensitivity
-        
-        # More balanced background subtractor
         self.background_subtractor = cv2.createBackgroundSubtractorMOG2(
-            detectShadows=True,
-            varThreshold=30,  # Reduced from 50 to be more sensitive
-            history=300       # Shorter history to adapt faster
+            detectShadows=True, varThreshold=50
         )
-        
-        # Morphological operations kernel
-        self.kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-        self.large_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        
-        # More balanced detection parameters
-        self.min_leak_area = 400      # Reduced from 800 to catch smaller leaks
-        self.max_leak_area = 8000     # Increased to catch larger leaks
-        self.min_aspect_ratio = 0.2   # More lenient
-        self.max_aspect_ratio = 5.0   # More lenient
-        
-        # Temporal filtering - more lenient
-        self.detection_history = []
-        self.history_length = 8       # Reduced from 10
-        self.persistence_threshold = 0.4  # Reduced from 0.6 to be more sensitive
-        
-        # Leak tracking
-        self.confirmed_leaks = []
+        self.kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        self.leak_threshold = 500  # Minimum contour area for leak detection
+        self.frame_buffer = []
         self.leak_detected = False
-        self.frame_count = 0
+        self.previous_frame = None
         
     def preprocess_frame(self, frame):
-        """Enhanced preprocessing for better leak detection"""
+        """Preprocess frame for better leak detection"""
+        if frame is None:
+            return None
+            
         # Convert to grayscale
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         # Apply Gaussian blur to reduce noise
-        blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         
         # Enhance contrast
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(blurred)
         
         return enhanced
     
     def detect_water_regions(self, frame):
-        """More sensitive water region detection"""
-        height, width = frame.shape[:2]
+        """Detect potential water/leak regions using multiple techniques"""
+        results = []
         
-        # Step 1: Background subtraction with more sensitivity
-        fg_mask = self.background_subtractor.apply(frame)
-        
-        # Step 2: Remove shadows but keep more motion
-        fg_mask[fg_mask == 127] = 0  # Remove shadow pixels
-        
-        # Step 3: Less aggressive morphological operations
-        fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, self.kernel)
-        fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, self.kernel)
-        
-        # Step 4: Enhanced water-specific detection
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        
-        # More comprehensive water color ranges
-        water_ranges = [
-            # Very dark water/wet surfaces
-            (np.array([0, 0, 0]), np.array([180, 255, 100])),
-            # Dark blue water
-            (np.array([90, 20, 20]), np.array([140, 255, 200])),
-            # Clear/reflective water  
-            (np.array([0, 0, 150]), np.array([180, 50, 255])),
-            # Wet concrete/surfaces
-            (np.array([0, 0, 30]), np.array([180, 50, 120]))
-        ]
-        
-        water_mask = np.zeros_like(fg_mask)
-        for lower, upper in water_ranges:
-            mask = cv2.inRange(hsv, lower, upper)
-            water_mask = cv2.bitwise_or(water_mask, mask)
-        
-        # Step 5: Combine motion and color with less strict requirements
-        # Use either motion OR water color (not both required)
-        combined_mask = cv2.bitwise_or(fg_mask, water_mask)
-        
-        # Step 6: Light noise reduction
-        combined_mask = cv2.medianBlur(combined_mask, 3)
-        
-        # Step 7: Find contours and validate with relaxed criteria
-        contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        validated_detections = []
-        
-        for contour in contours:
-            # Calculate contour properties
-            area = cv2.contourArea(contour)
+        try:
+            # Method 1: Background subtraction for motion detection
+            fg_mask = self.background_subtractor.apply(frame)
             
-            # More lenient area filtering
-            min_area = self.min_leak_area * (self.sensitivity / 100) * 0.5  # Even more lenient
-            if area < min_area:
-                continue
+            # Method 2: Edge detection for water boundaries
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            edges = cv2.Canny(gray, 50, 150)
+            
+            # Method 3: Color-based detection for water (blue/dark regions)
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            
+            # Define range for blue/dark water-like colors
+            lower_water = np.array([100, 50, 20])
+            upper_water = np.array([130, 255, 255])
+            water_mask = cv2.inRange(hsv, lower_water, upper_water)
+            
+            # Method 4: Frame difference for movement detection
+            if self.previous_frame is not None:
+                diff = cv2.absdiff(gray, self.previous_frame)
+                _, diff_thresh = cv2.threshold(diff, 25, 255, cv2.THRESH_BINARY)
+            else:
+                diff_thresh = np.zeros_like(gray)
+            
+            self.previous_frame = gray.copy()
+            
+            # Combine all detection methods
+            combined_mask = cv2.bitwise_or(fg_mask, edges)
+            combined_mask = cv2.bitwise_or(combined_mask, water_mask)
+            combined_mask = cv2.bitwise_or(combined_mask, diff_thresh)
+            
+            # Morphological operations to clean up the mask
+            combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_CLOSE, self.kernel)
+            combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_OPEN, self.kernel)
+            
+            # Find contours
+            contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            # Filter contours based on area and aspect ratio
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                adjusted_threshold = self.leak_threshold * (self.sensitivity / 100)
                 
-            if area > self.max_leak_area:
-                continue
-            
-            # Get bounding rectangle
-            x, y, w, h = cv2.boundingRect(contour)
-            
-            # More lenient aspect ratio
-            aspect_ratio = w / h if h > 0 else 0
-            if aspect_ratio < self.min_aspect_ratio or aspect_ratio > self.max_aspect_ratio:
-                continue
-            
-            # More lenient edge filtering
-            edge_margin = 20  # Reduced from 30
-            if x < edge_margin or y < edge_margin or x + w > width - edge_margin or y + h > height - edge_margin:
-                continue
-            
-            # More lenient solidity check
-            hull = cv2.convexHull(contour)
-            hull_area = cv2.contourArea(hull)
-            solidity = area / hull_area if hull_area > 0 else 0
-            
-            if solidity < 0.2:  # Reduced from 0.3
-                continue
-            
-            # More generous confidence scoring
-            base_confidence = min(85, 50 + (area / 30))  # Higher base confidence
-            size_factor = min(1.5, area / 500)
-            motion_factor = 1.2 if area in fg_mask.nonzero()[0] else 1.0
-            
-            confidence = int(base_confidence * size_factor * motion_factor)
-            confidence = max(65, min(99, confidence))  # Higher minimum confidence
-            
-            validated_detections.append({
-                'bbox': (x, y, w, h),
-                'confidence': confidence,
-                'area': area,
-                'type': 'water_leak',
-                'solidity': solidity
-            })
-        
-        return validated_detections, combined_mask
-    
-    def temporal_filtering(self, detections):
-        """More lenient temporal filtering"""
-        self.frame_count += 1
-        
-        # Add current detections to history
-        self.detection_history.append(detections)
-        
-        # Keep only recent history
-        if len(self.detection_history) > self.history_length:
-            self.detection_history.pop(0)
-        
-        # For each detection, check persistence with more lenient criteria
-        confirmed_detections = []
-        
-        for detection in detections:
-            x, y, w, h = detection['bbox']
-            center_x, center_y = x + w//2, y + h//2
-            
-            # Count nearby detections in history
-            persistence_count = 0
-            
-            for historical_detections in self.detection_history:
-                for hist_detection in historical_detections:
-                    hx, hy, hw, hh = hist_detection['bbox']
-                    hist_center_x, hist_center_y = hx + hw//2, hy + hh//2
+                if area > adjusted_threshold:
+                    x, y, w, h = cv2.boundingRect(contour)
                     
-                    # More lenient distance check
-                    distance = np.sqrt((center_x - hist_center_x)**2 + (center_y - hist_center_y)**2)
-                    if distance < 70:  # Increased from 50
-                        persistence_count += 1
-                        break
+                    # Calculate confidence based on area and shape
+                    confidence = min(99, int((area / 1000) * 20 + 60))
+                    
+                    # Boost confidence for blue/water colored regions
+                    roi_hsv = hsv[y:y+h, x:x+w]
+                    water_pixels = cv2.countNonZero(cv2.inRange(roi_hsv, lower_water, upper_water))
+                    water_ratio = water_pixels / (w * h) if (w * h) > 0 else 0
+                    
+                    if water_ratio > 0.3:  # 30% water-colored pixels
+                        confidence = min(99, confidence + 20)
+                    
+                    results.append({
+                        'bbox': (x, y, w, h),
+                        'confidence': confidence,
+                        'area': area,
+                        'type': 'water_leak',
+                        'water_ratio': water_ratio
+                    })
             
-            # Calculate persistence ratio
-            persistence_ratio = persistence_count / max(1, len(self.detection_history))
+            return results, combined_mask
             
-            # More lenient persistence requirement OR high confidence bypass
-            if persistence_ratio >= self.persistence_threshold or detection['confidence'] >= 80:
-                # Boost confidence for persistent or high-confidence detections
-                if persistence_ratio >= self.persistence_threshold:
-                    detection['confidence'] = min(99, detection['confidence'] + 5)
-                confirmed_detections.append(detection)
-        
-        return confirmed_detections
+        except Exception as e:
+            logger.error(f"Error in water detection: {str(e)}")
+            return [], np.zeros_like(gray) if gray is not None else np.zeros((480, 640), dtype=np.uint8)
     
     def detect_leak(self, frame):
-        """Main leak detection with balanced sensitivity"""
+        """Main leak detection function"""
         global leak_count
         
         if frame is None:
-            return frame, []
+            return np.zeros((480, 640, 3), dtype=np.uint8), []
         
-        # Resize frame for consistent processing
-        frame = cv2.resize(frame, (640, 480))
-        
-        # Preprocess frame
-        processed_frame = self.preprocess_frame(frame)
-        
-        # Detect potential leak regions
-        detections, mask = self.detect_water_regions(frame)
-        
-        # Apply temporal filtering
-        confirmed_detections = self.temporal_filtering(detections)
-        
-        # Draw detections on frame
-        result_frame = frame.copy()
-        
-        current_high_confidence = 0
-        
-        for detection in confirmed_detections:
-            x, y, w, h = detection['bbox']
-            confidence = detection['confidence']
+        try:
+            # Preprocess frame
+            processed_frame = self.preprocess_frame(frame)
             
-            # Color coding by confidence
-            if confidence >= 85:
-                color = (0, 0, 255)  # Red for very high confidence
-                thickness = 3
-                current_high_confidence += 1
-            elif confidence >= 70:
-                color = (0, 165, 255)  # Orange for high confidence  
-                thickness = 2
-                current_high_confidence += 1
-            else:
-                color = (0, 255, 255)  # Yellow for medium confidence
-                thickness = 2
+            if processed_frame is None:
+                return frame, []
             
-            # Draw bounding box
-            cv2.rectangle(result_frame, (x, y), (x + w, y + h), color, thickness)
+            # Detect potential leak regions
+            detections, mask = self.detect_water_regions(frame)
             
-            # Draw confidence label
-            label = f"LEAK: {confidence}%"
-            label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+            # Draw detections on frame
+            result_frame = frame.copy()
             
-            # Label background
-            cv2.rectangle(result_frame, (x, y - label_size[1] - 10), 
-                         (x + label_size[0] + 10, y), color, -1)
+            current_leak_detected = False
             
-            # Label text
-            cv2.putText(result_frame, label, (x + 5, y - 5), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-        
-        # Update leak count for medium+ confidence detections
-        if current_high_confidence > 0:
-            if not self.leak_detected:
-                leak_count += current_high_confidence
+            for detection in detections:
+                x, y, w, h = detection['bbox']
+                confidence = detection['confidence']
+                water_ratio = detection.get('water_ratio', 0)
+                
+                # Choose color based on confidence
+                if confidence > 80:
+                    color = (0, 0, 255)  # Red for high confidence
+                    current_leak_detected = True
+                elif confidence > 60:
+                    color = (0, 165, 255)  # Orange for medium confidence
+                else:
+                    color = (0, 255, 255)  # Yellow for low confidence
+                
+                # Draw bounding box
+                cv2.rectangle(result_frame, (x, y), (x + w, y + h), color, 2)
+                
+                # Draw confidence label
+                label = f"LEAK: {confidence}% (W:{water_ratio:.2f})"
+                label_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
+                cv2.rectangle(result_frame, (x, y - label_size[1] - 10), 
+                             (x + label_size[0], y), color, -1)
+                cv2.putText(result_frame, label, (x, y - 5), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+            
+            # Update leak count if high confidence detection and not already detected
+            if current_leak_detected and not self.leak_detected:
+                leak_count += 1
                 self.leak_detected = True
-                logger.info(f"Leak detected: {current_high_confidence} leaks found")
-        else:
-            self.leak_detected = False
-        
-        # System info overlay
-        info_lines = [
-            f"Sensitivity: {self.sensitivity}% | Leaks: {leak_count} | Active: {'YES' if confirmed_detections else 'NO'}",
-            f"Frame: {self.frame_count} | Confirmed: {len(confirmed_detections)} | Raw: {len(detections)} | History: {len(self.detection_history)}"
-        ]
-        
-        for i, info_text in enumerate(info_lines):
-            y_pos = 25 + (i * 25)
-            text_size = cv2.getTextSize(info_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)[0]
-            cv2.rectangle(result_frame, (5, y_pos - 20), (text_size[0] + 10, y_pos + 5), (0, 0, 0), -1)
-            cv2.putText(result_frame, info_text, (10, y_pos), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        
-        return result_frame, confirmed_detections
-
-# Initialize global detector
-detector = BalancedWaterLeakDetector()
+                logger.info(f"New leak detected! Total leaks: {leak_count}")
+            elif not current_leak_detected:
+                self.leak_detected = False
+            
+            # Add detection info overlay
+            timestamp = time.strftime("%H:%M:%S")
+            info_text = f"Sensitivity: {self.sensitivity}% | Leaks: {leak_count} | Time: {timestamp}"
+            cv2.putText(result_frame, info_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            
+            # Add detection status
+            status_text = f"Status: {'LEAK DETECTED' if current_leak_detected else 'MONITORING'}"
+            status_color = (0, 0, 255) if current_leak_detected else (0, 255, 0)
+            cv2.putText(result_frame, status_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
+            
+            return result_frame, detections
+            
+        except Exception as e:
+            logger.error(f"Error in leak detection: {str(e)}")
+            # Return original frame with error message
+            error_frame = frame.copy()
+            cv2.putText(error_frame, f"Detection Error: {str(e)[:50]}", (10, 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            return error_frame, []
 
 def generate_frames(video_path=None):
     """Generate video frames for streaming"""
@@ -309,20 +220,47 @@ def generate_frames(video_path=None):
     cap = cv2.VideoCapture(video_source)
     if not cap.isOpened():
         logger.error(f"Could not open video source: {video_source}")
+        # Create a black frame with error message
+        error_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        cv2.putText(error_frame, "VIDEO SOURCE ERROR", (200, 240), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        ret, buffer = cv2.imencode('.jpg', error_frame)
+        if ret:
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
         return
     
     logger.info(f"Starting video stream from: {video_source}")
     
     try:
+        frame_count = 0
         while monitoring_active:
             success, frame = cap.read()
             if not success:
                 # If video file ends, restart from beginning
-                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                continue
+                if isinstance(video_source, str) and os.path.isfile(video_source):
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    continue
+                else:
+                    logger.warning("Failed to read frame from video source")
+                    break
+            
+            frame_count += 1
+            
+            # Resize frame for better performance
+            frame = cv2.resize(frame, (640, 480))
             
             # Apply leak detection
-            processed_frame, detections = detector.detect_leak(frame)
+            if detector:
+                processed_frame, detections = detector.detect_leak(frame)
+            else:
+                processed_frame = frame
+                cv2.putText(processed_frame, "DETECTOR NOT INITIALIZED", (10, 30), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            
+            # Add frame counter
+            cv2.putText(processed_frame, f"Frame: {frame_count}", (10, processed_frame.shape[0] - 10), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             
             # Encode frame for streaming
             ret, buffer = cv2.imencode('.jpg', processed_frame, 
@@ -342,22 +280,33 @@ def generate_frames(video_path=None):
 
 def start_monitoring(video_path, sensitivity=75):
     """Start leak detection monitoring"""
-    global monitoring_active, detector, uptime_start, video_source, leak_count
+    global monitoring_active, detector, uptime_start, video_source, current_sensitivity
     
     if monitoring_active:
-        stop_monitoring()  # Stop existing monitoring first
+        logger.warning("Monitoring already active")
+        return False
     
-    # Reset leak count
-    leak_count = 0
-    
-    # Initialize detector with new sensitivity
-    detector = BalancedWaterLeakDetector(sensitivity)
-    video_source = video_path
-    monitoring_active = True
-    uptime_start = time.time()
-    
-    logger.info(f"Started monitoring with sensitivity: {sensitivity}%")
-    return True
+    try:
+        # Validate video source
+        if isinstance(video_path, str):
+            if not os.path.exists(video_path) and not video_path.isdigit():
+                logger.error(f"Video source not found: {video_path}")
+                return False
+        
+        # Initialize detector with new sensitivity
+        detector = WaterLeakDetector(sensitivity)
+        video_source = video_path
+        current_sensitivity = sensitivity
+        monitoring_active = True
+        uptime_start = time.time()
+        
+        logger.info(f"Started monitoring with sensitivity: {sensitivity}%")
+        logger.info(f"Video source: {video_source}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error starting monitoring: {str(e)}")
+        return False
 
 def stop_monitoring():
     """Stop leak detection monitoring"""
@@ -365,11 +314,10 @@ def stop_monitoring():
     
     monitoring_active = False
     logger.info("Monitoring stopped")
-    return True
 
 def get_monitoring_stats():
     """Get current monitoring statistics"""
-    global leak_count, uptime_start, monitoring_active
+    global leak_count, uptime_start, monitoring_active, current_sensitivity
     
     if uptime_start:
         uptime_seconds = int(time.time() - uptime_start)
@@ -383,20 +331,15 @@ def get_monitoring_stats():
         'uptime': uptime_str,
         'avg_response_time': f"{np.random.uniform(1.8, 2.8):.1f}s",
         'monitoring_active': monitoring_active,
-        'frame_count': detector.frame_count if detector else 0,
-        'history_length': len(detector.detection_history) if detector else 0
+        'sensitivity': current_sensitivity,
+        'video_source': str(video_source) if video_source is not None else "None"
     }
 
 def reset_leak_count():
     """Reset leak counter"""
     global leak_count
     leak_count = 0
-    if detector:
-        detector.detection_history = []
-        detector.confirmed_leaks = []
-        detector.leak_detected = False
-        detector.frame_count = 0
-    logger.info("Leak counter and detection history reset")
+    logger.info("Leak counter reset")
 
 # Flask routes for integration
 def init_leak_detection_routes(app):
@@ -444,7 +387,7 @@ def init_leak_detection_routes(app):
                     'monitoring_status': 'ACTIVE',
                     'sensitivity': sensitivity,
                     'file_path': save_path,
-                    'message': 'Neural leak detection monitoring initiated with balanced algorithm'
+                    'message': 'Neural leak detection monitoring initiated'
                 })
             else:
                 return jsonify({
@@ -461,6 +404,40 @@ def init_leak_detection_routes(app):
                 'message': f'Neural monitoring system failure: {str(e)}'
             }), 500
     
+    @app.route('/api/neural/leak/webcam', methods=['POST'])
+    def start_webcam_monitoring():
+        """Start webcam monitoring"""
+        try:
+            data = request.get_json() or {}
+            sensitivity = int(data.get('sensitivity', 75))
+            camera_index = int(data.get('camera_index', 0))
+            
+            success = start_monitoring(camera_index, sensitivity)
+            
+            if success:
+                return jsonify({
+                    'status': 'NEURAL_MONITORING',
+                    'neural_response': 'WEBCAM_MONITORING_ACTIVE',
+                    'monitoring_status': 'ACTIVE',
+                    'sensitivity': sensitivity,
+                    'camera_index': camera_index,
+                    'message': 'Webcam leak detection monitoring started'
+                })
+            else:
+                return jsonify({
+                    'status': 'ERROR',
+                    'neural_response': 'WEBCAM_START_FAILED',
+                    'message': 'Failed to start webcam monitoring'
+                }), 500
+                
+        except Exception as e:
+            logger.error(f"Webcam monitoring error: {str(e)}")
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'WEBCAM_ERROR',
+                'message': f'Webcam error: {str(e)}'
+            }), 500
+    
     @app.route('/api/neural/leak/stream')
     def video_stream():
         """Video streaming endpoint"""
@@ -475,25 +452,25 @@ def init_leak_detection_routes(app):
     @app.route('/api/neural/leak/stop', methods=['POST'])
     def stop_leak_monitoring():
         """Stop monitoring endpoint"""
-        success = stop_monitoring()
+        stop_monitoring()
         return jsonify({
-            'status': 'STOPPED' if success else 'ERROR',
-            'neural_response': 'MONITORING_TERMINATED' if success else 'STOP_FAILED',
-            'message': 'Leak detection monitoring stopped' if success else 'Failed to stop monitoring'
+            'status': 'STOPPED',
+            'neural_response': 'MONITORING_TERMINATED',
+            'message': 'Leak detection monitoring stopped'
         })
     
     @app.route('/api/neural/leak/sensitivity', methods=['POST'])
     def update_sensitivity():
         """Update detection sensitivity"""
-        global detector
+        global detector, current_sensitivity
         
         try:
             data = request.get_json()
-            sensitivity = data.get('sensitivity', 75)
+            sensitivity = int(data.get('sensitivity', 75))
             
             if detector:
                 detector.sensitivity = sensitivity
-                logger.info(f"Sensitivity updated to {sensitivity}%")
+                current_sensitivity = sensitivity
                 
             return jsonify({
                 'status': 'UPDATED',
@@ -501,37 +478,89 @@ def init_leak_detection_routes(app):
                 'message': f'Detection sensitivity updated to {sensitivity}%'
             })
         except Exception as e:
-            logger.error(f"Error updating sensitivity: {str(e)}")
             return jsonify({
                 'status': 'ERROR',
                 'message': f'Failed to update sensitivity: {str(e)}'
             }), 500
     
     @app.route('/api/neural/leak/reset', methods=['POST'])
-    def reset_detection():
-        """Reset detection history and leak count"""
+    def reset_leak_counter():
+        """Reset leak counter"""
         try:
             reset_leak_count()
             return jsonify({
-                'status': 'RESET',
-                'message': 'Detection history and leak count reset'
+                'status': 'SUCCESS',
+                'neural_response': 'COUNTER_RESET',
+                'message': 'Leak counter has been reset'
             })
         except Exception as e:
-            logger.error(f"Error resetting detection: {str(e)}")
             return jsonify({
                 'status': 'ERROR',
-                'message': f'Failed to reset detection: {str(e)}'
+                'message': f'Failed to reset counter: {str(e)}'
             }), 500
 
 # Main function for testing
 if __name__ == "__main__":
-    test_video = "test_video.mp4"
+    # Test the leak detection with a sample video
+    test_video = "test_video.mp4"  # Replace with your test video path
     
-    if os.path.exists(test_video):
-        print("Testing balanced leak detection...")
-        start_monitoring(test_video, 75)
-        time.sleep(30)
+    print("Water Leak Detection System - Standalone Test")
+    print("=" * 50)
+    
+    # Test with webcam if no test video
+    if not os.path.exists(test_video):
+        print(f"Test video not found: {test_video}")
+        print("Testing with webcam (index 0)...")
+        test_source = 0
+    else:
+        test_source = test_video
+    
+    try:
+        print("Starting leak detection monitoring...")
+        success = start_monitoring(test_source, 75)
+        
+        if success:
+            print("✓ Monitoring started successfully")
+            print("Press Ctrl+C to stop...")
+            
+            # Create a window to display the video
+            cv2.namedWindow('Water Leak Detection', cv2.WINDOW_RESIZABLE)
+            
+            # Manual frame processing for standalone testing
+            cap = cv2.VideoCapture(test_source)
+            detector = WaterLeakDetector(75)
+            
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    if isinstance(test_source, str):
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                        continue
+                    else:
+                        break
+                
+                frame = cv2.resize(frame, (640, 480))
+                processed_frame, detections = detector.detect_leak(frame)
+                
+                cv2.imshow('Water Leak Detection', processed_frame)
+                
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord('q'):
+                    break
+                elif key == ord('r'):
+                    reset_leak_count()
+                    print("Leak counter reset")
+            
+            cap.release()
+            cv2.destroyAllWindows()
+            
+        else:
+            print("✗ Failed to start monitoring")
+            
+    except KeyboardInterrupt:
+        print("\nStopping monitoring...")
+    except Exception as e:
+        print(f"Error during testing: {e}")
+    finally:
         stop_monitoring()
         print("Test completed")
-    else:
-        print(f"Test video not found: {test_video}")
