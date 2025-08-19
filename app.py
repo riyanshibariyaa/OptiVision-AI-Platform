@@ -20,7 +20,7 @@ from TextExtraction import extract_text_from_image, extract_text
 from modules.WaterLeakage import init_leak_detection_routes, get_monitoring_stats
 import base64
 
-from flask import send_file
+
 
 import tempfile
 from werkzeug.utils import secure_filename
