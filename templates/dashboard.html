@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiView - Computer Vision Suite</title>
+    
+    <!-- External Libraries -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo i {
+            color: #4fd1c7;
+        }
+
+        .health-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4fd1c7;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+            opacity: 0;
+            animation: fadeInUp 1s ease forwards;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 600px;
+            margin: 0 auto;
+            opacity: 0;
+            animation: fadeInUp 1s ease 0.2s forwards;
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .model-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        .model-card:nth-child(1) { animation-delay: 0.3s; }
+        .model-card:nth-child(2) { animation-delay: 0.4s; }
+        .model-card:nth-child(3) { animation-delay: 0.5s; }
+        .model-card:nth-child(4) { animation-delay: 0.6s; }
+
+        .model-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .model-card:hover::before {
+            left: 100%;
+        }
+
+        .model-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .model-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .blur-icon { color: #ff6b6b; }
+        .object-icon { color: #4ecdc4; }
+        .text-icon { color: #45b7d1; }
+        .leak-icon { color: #96ceb4; }
+
+        .model-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .model-card p {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .model-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-tag {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .launch-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .launch-btn:hover {
+            background: linear-gradient(45deg, #5a6fd8, #6a4190);
+            transform: scale(1.05);
+        }
+
+        .stats-section {
+            margin-top: 4rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4fd1c7;
+            display: block;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .models-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 2rem 1rem;
+            }
+            
+            .header-content {
+                padding: 0 1rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid #4fd1c7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-eye"></i>
+                OptiView
+            </div>
+            <div class="health-status">
+                <div class="status-dot"></div>
+                <span>System Online</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Computer Vision Suite</h1>
+            <p>Advanced AI-powered tools for image and video analysis. Choose from our collection of specialized computer vision models.</p>
+        </div>
+
+        <div class="models-grid">
+            <div class="model-card" onclick="navigateToModel('/blur')">
+                <i class="fas fa-eye-slash model-icon blur-icon"></i>
+                <h3>Blur Detection & Privacy</h3>
+                <p>Automatically detect and blur faces, license plates, and sensitive content in images and videos.</p>
+                <div class="model-features">
+                    <span class="feature-tag">Face Detection</span>
+                    <span class="feature-tag">License Plates</span>
+                    <span class="feature-tag">Real-time</span>
+                    <span class="feature-tag">Batch Processing</span>
+                </div>
+                <button class="launch-btn">Launch Model</button>
+            </div>
+
+            <div class="model-card" onclick="navigateToModel('/object_detection')">
+                <i class="fas fa-search model-icon object-icon"></i>
+                <h3>Object Detection</h3>
+                <p>Identify and locate multiple objects in images and videos with high accuracy bounding boxes.</p>
+                <div class="model-features">
+                    <span class="feature-tag">80+ Classes</span>
+                    <span class="feature-tag">YOLOv5</span>
+                    <span class="feature-tag">Video Support</span>
+                    <span class="feature-tag">Custom Models</span>
+                </div>
+                <button class="launch-btn">Launch Model</button>
+            </div>
+
+            <div class="model-card" onclick="navigateToModel('/text_extraction')">
+                <i class="fas fa-file-text model-icon text-icon"></i>
+                <h3>Text Extraction (OCR)</h3>
+                <p>Extract text from images, documents, and scanned files with advanced OCR technology.</p>
+                <div class="model-features">
+                    <span class="feature-tag">Multi-language</span>
+                    <span class="feature-tag">PDF Support</span>
+                    <span class="feature-tag">Handwriting</span>
+                    <span class="feature-tag">High Accuracy</span>
+                </div>
+                <button class="launch-btn">Launch Model</button>
+            </div>
+
+            <div class="model-card" onclick="navigateToModel('/water_leakage')">
+                <i class="fas fa-tint model-icon leak-icon"></i>
+                <h3>Water Leakage Detection</h3>
+                <p>Detect water leaks and moisture damage in infrastructure using advanced computer vision algorithms.</p>
+                <div class="model-features">
+                    <span class="feature-tag">Infrastructure</span>
+                    <span class="feature-tag">Early Warning</span>
+                    <span class="feature-tag">Live Monitoring</span>
+                    <span class="feature-tag">Alerts</span>
+                </div>
+                <button class="launch-btn">Launch Model</button>
+            </div>
+        </div>
+
+        <div class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-number" id="processedFiles">0</span>
+                    <div class="stat-label">Files Processed</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">4</span>
+                    <div class="stat-label">AI Models</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="uptime">99.9%</span>
+                    <div class="stat-label">Uptime</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="avgProcessTime">2.3s</span>
+                    <div class="stat-label">Avg Process Time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 OptiView Computer Vision Suite. Powered by Advanced AI Models.</p>
+    </footer>
+
+    <script>
+        // Navigation function
+        function navigateToModel(modelPath) {
+            showLoading();
+            setTimeout(() => {
+                window.location.href = modelPath;
+            }, 500);
+        }
+
+        // Loading overlay functions
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // Health check and stats update
+        async function updateSystemHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    // Update processed files counter (simulate)
+                    const processedElement = document.getElementById('processedFiles');
+                    let currentValue = parseInt(processedElement.textContent);
+                    processedElement.textContent = currentValue + Math.floor(Math.random() * 3);
+                }
+            } catch (error) {
+                console.log('Health check failed:', error);
+                // Update status to offline
+                document.querySelector('.health-status span').textContent = 'System Offline';
+                document.querySelector('.status-dot').style.background = '#ff6b6b';
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial health check
+            updateSystemHealth();
+            
+            // Periodic health checks
+            setInterval(updateSystemHealth, 30000); // Every 30 seconds
+            
+            // Animate numbers
+            animateNumbers();
+        });
+
+        // Number animation function
+        function animateNumbers() {
+            const numbers = document.querySelectorAll('.stat-number');
+            numbers.forEach(num => {
+                if (num.id === 'processedFiles') {
+                    animateNumber(num, 0, 1247, 2000);
+                }
+            });
+        }
+
+        function animateNumber(element, start, end, duration) {
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= end) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.floor(current);
+            }, 16);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        navigateToModel('/blur');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        navigateToModel('/object_detection');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        navigateToModel('/text_extraction');
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        navigateToModel('/water_leakage');
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

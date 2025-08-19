@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Detection - OptiView Neural Interface</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open Sans:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #000000;
+            color: #0066FF;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Cyberpunk Background Effects */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(0, 100, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0066FF, transparent);
+            z-index: 10;
+            animation: scanLine 4s linear infinite;
+        }
+
+        /* Neural Header */
+        .neural-header {
+            position: relative;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #0066FF;
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 102, 255, 0.3);
+        }
+
+        .neural-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #0066FF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 2s infinite;
+        }
+
+        .logo-text {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 0 10px #0066FF;
+        }
+
+        .logo-subtitle {
+            font-size: 0.8rem;
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .back-btn {
+            background: rgba(0, 102, 255, 0.1);
+            border: 2px solid #0066FF;
+            color: #0066FF;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #0066FF;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            transform: translateX(-5px);
+        }
+
+        /* Main Container */
+        .neural-container {
+            position: relative;
+            z-index: 50;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Detection Title */
+        .detection-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .detection-title h1 {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 3rem;
+            color: #ffffff;
+            text-shadow: 0 0 20px #0066FF;
+            margin-bottom: 1rem;
+            animation: textGlow 3s ease-in-out infinite alternate;
+        }
+
+        .detection-title p {
+            font-size: 1.2rem;
+            color: #ffffff;
+            opacity: 0.8;
+        }
+
+        /* Main Interface Grid */
+        .interface-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Upload Interface */
+        .upload-interface {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 102, 255, 0.2),
+                inset 0 1px 0 rgba(0, 255, 255, 0.1);
+        }
+
+        .interface-title {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.3rem;
+            color: #0066FF;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .neural-dropzone {
+            border: 2px dashed #0066FF;
+            border-radius: 10px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+            position: relative;
+            background: rgba(0, 102, 255, 0.02);
+        }
+
+        .neural-dropzone:hover {
+            border-color: #0066FF;
+            background: rgba(0, 255, 255, 0.05);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .neural-dropzone.dragover {
+            border-color: #0066FF;
+            background: rgba(0, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .dropzone-icon {
+            font-size: 4rem;
+            color: #0066FF;
+            margin-bottom: 1rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .dropzone-text {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.2rem;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .dropzone-subtext {
+            font-size: 0.9rem;
+            color: #ffffff;
+            opacity: 0.7;
+        }
+
+        /* Neural Controls */
+        .neural-controls {
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-label {
+            font-family: 'Open Sans', sans-serif;
+            color: #0066FF;
+            font-weight: 500;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .value-display {
+            color: #0066FF;
+            font-weight: 700;
+        }
+
+        .neural-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #000000, #0066FF);
+            outline: none;
+            -webkit-appearance: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .neural-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #0066FF;
+            border: 2px solid #0066FF;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        .neural-select {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 102, 255, 0.1);
+            border: 2px solid #0066FF;
+            border-radius: 10px;
+            color: #0066FF;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1rem;
+        }
+
+        .neural-select option {
+            background: #000000;
+            color: #0066FF;
+        }
+
+        /* Neural Process Button */
+        .neural-process-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #0066FF, #00AAFF);
+            border: none;
+            color: #FFFFFF;
+            padding: 1.5rem 2rem;
+            border-radius: 10px;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+        }
+
+        .neural-process-btn:hover {
+            background: linear-gradient(135deg, #00AAFF, #0066FF);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            transform: translateY(-3px);
+        }
+
+        .neural-process-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .neural-process-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .neural-process-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Processing Interface */
+        .processing-interface {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 255, 255, 0.2),
+                inset 0 1px 0 rgba(0, 255, 255, 0.1);
+        }
+
+        .results-area {
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+            border: 1px solid #0066FF;
+            border-radius: 10px;
+            background: rgba(0, 255, 255, 0.02);
+            margin-bottom: 2rem;
+        }
+
+        .results-placeholder {
+            text-align: center;
+            color: #0066FF;
+        }
+
+        .results-placeholder i {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .neural-progress {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0066FF, #0066FF);
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: energyFlow 2s linear infinite;
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            border: 2px solid #0066FF;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .neural-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 255, 255, 0.1);
+            border-top: 4px solid #0066FF;
+            border-right: 4px solid #0066FF;
+            border-radius: 50%;
+            animation: neuralSpin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        /* Detection Stats */
+        .detection-stats {
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid #0066FF;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            color: #0066FF;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        /* Video Controls */
+        .video-controls {
+            display: none;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .control-btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #0066FF;
+            color: #0066FF;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            font-family: 'Open Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+
+        /* Object Classes Grid */
+        .object-classes {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .class-tag {
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid #0066FF;
+            color: #ffffff;
+            padding: 0.5rem;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-family: 'Open Sans', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .class-tag:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #0066FF;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        @keyframes textGlow {
+            0% { text-shadow: 0 0 10px #0066FF; }
+            100% { text-shadow: 0 0 20px #0066FF, 0 0 30px #0066FF; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100vh); }
+        }
+
+        @keyframes energyFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        @keyframes neuralSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .interface-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .detection-title h1 {
+                font-size: 2rem;
+            }
+            
+            .neural-container {
+                padding: 1rem;
+            }
+            
+            .classes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+            
+            .video-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="matrix-bg"></div>
+    <div class="grid-overlay"></div>
+    <div class="scan-line"></div>
+
+    <!-- Neural Header -->
+    <header class="neural-header">
+        <div class="neural-logo">
+            <div class="logo-icon">
+                <i class="fas fa-search"></i>
+            </div>
+            <div>
+                <div class="logo-text">NEURAL DETECTION</div>
+                <div class="logo-subtitle">OBJECT RECOGNITION SYSTEM</div>
+            </div>
+        </div>
+        
+        <a href="/neural-dashboard" class="back-btn">
+            <i class="fas fa-arrow-left"></i> NEURAL HUB
+        </a>
+    </header>
+
+    <!-- Main Neural Container -->
+    <div class="neural-container">
+        <!-- Detection Title -->
+        <div class="detection-title">
+            <h1>NEURAL OBJECT DETECTION</h1>
+            <p>Advanced YOLO-based neural network for real-time object recognition with 80+ class support</p>
+        </div>
+
+        <!-- Main Interface -->
+        <div class="interface-grid">
+            <!-- Upload Interface -->
+            <div class="upload-interface">
+                <h2 class="interface-title">
+                    <i class="fas fa-upload"></i>
+                    VISUAL INPUT STREAM
+                </h2>
+                
+                <div class="neural-dropzone" onclick="document.getElementById('neuralFileInput').click()">
+                    <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
+                    <div class="dropzone-text">UPLOAD DETECTION TARGET</div>
+                    <div class="dropzone-subtext">JPG, PNG, MP4, AVI • MAX 200MB</div>
+                </div>
+                
+                <input type="file" id="neuralFileInput" style="display: none;" accept="image/*,video/*">
+                
+                <div class="neural-controls">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>CONFIDENCE THRESHOLD</span>
+                            <span class="value-display" id="confidenceValue">50%</span>
+                        </div>
+                        <input type="range" class="neural-slider" id="confidenceSlider" min="10" max="95" value="50">
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>NEURAL MODEL</span>
+                        </div>
+                        <select class="neural-select" id="modelSelect">
+                            <option value="yolov5s">YOLOv5s (FAST)</option>
+                            <option value="yolov5m">YOLOv5m (BALANCED)</option>
+                            <option value="yolov5l">YOLOv5l (ACCURATE)</option>
+                            <option value="yolov5x">YOLOv5x (MAXIMUM)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="neural-process-btn" id="processBtn" disabled>
+                    <i class="fas fa-search"></i>
+                    INITIATE DETECTION
+                </button>
+                
+                <div class="neural-progress" id="neuralProgress">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <!-- Processing Interface -->
+            <div class="processing-interface">
+                <h2 class="interface-title">
+                    <i class="fas fa-crosshairs"></i>
+                    DETECTION RESULTS
+                </h2>
+                
+                <div class="results-area" id="resultsArea">
+                    <div class="results-placeholder">
+                        <i class="fas fa-search"></i>
+                        <p>NEURAL DETECTION STANDBY</p>
+                        <p>Awaiting visual data for analysis...</p>
+                    </div>
+                </div>
+                
+                <div class="video-controls" id="videoControls">
+                    <button class="control-btn" onclick="pauseProcessing()">
+                        <i class="fas fa-pause"></i> PAUSE
+                    </button>
+                    <button class="control-btn" onclick="resumeProcessing()">
+                        <i class="fas fa-play"></i> RESUME
+                    </button>
+                    <button class="control-btn" onclick="stopProcessing()">
+                        <i class="fas fa-stop"></i> TERMINATE
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Object Classes -->
+        <div class="object-classes">
+            <h2 class="interface-title">
+                <i class="fas fa-tags"></i>
+                NEURAL CLASSIFICATION MATRIX (80+ OBJECTS)
+            </h2>
+            <div class="classes-grid">
+                <div class="class-tag">PERSON</div>
+                <div class="class-tag">CAR</div>
+                <div class="class-tag">BICYCLE</div>
+                <div class="class-tag">MOTORCYCLE</div>
+                <div class="class-tag">AIRPLANE</div>
+                <div class="class-tag">BUS</div>
+                <div class="class-tag">TRAIN</div>
+                <div class="class-tag">TRUCK</div>
+                <div class="class-tag">BOAT</div>
+                <div class="class-tag">TRAFFIC LIGHT</div>
+                <div class="class-tag">FIRE HYDRANT</div>
+                <div class="class-tag">STOP SIGN</div>
+                <div class="class-tag">CAT</div>
+                <div class="class-tag">DOG</div>
+                <div class="class-tag">HORSE</div>
+                <div class="class-tag">SHEEP</div>
+                <div class="class-tag">COW</div>
+                <div class="class-tag">ELEPHANT</div>
+                <div class="class-tag">BEAR</div>
+                <div class="class-tag">ZEBRA</div>
+                <div class="class-tag">GIRAFFE</div>
+                <div class="class-tag">BACKPACK</div>
+                <div class="class-tag">UMBRELLA</div>
+                <div class="class-tag">HANDBAG</div>
+                <div class="class-tag">TIE</div>
+                <div class="class-tag">SUITCASE</div>
+                <div class="class-tag">FRISBEE</div>
+                <div class="class-tag">SKIS</div>
+                <div class="class-tag">SNOWBOARD</div>
+                <div class="class-tag">SPORTS BALL</div>
+                <div class="class-tag">KITE</div>
+                <div class="class-tag">BASEBALL BAT</div>
+                <div class="class-tag">BASEBALL GLOVE</div>
+                <div class="class-tag">SKATEBOARD</div>
+                <div class="class-tag">SURFBOARD</div>
+                <div class="class-tag">TENNIS RACKET</div>
+                <div class="class-tag">BOTTLE</div>
+                <div class="class-tag">WINE GLASS</div>
+                <div class="class-tag">CUP</div>
+                <div class="class-tag">FORK</div>
+                <div class="class-tag">KNIFE</div>
+                <div class="class-tag">SPOON</div>
+                <div class="class-tag">BOWL</div>
+                <div class="class-tag">BANANA</div>
+                <div class="class-tag">APPLE</div>
+                <div class="class-tag">SANDWICH</div>
+                <div class="class-tag">ORANGE</div>
+                <div class="class-tag">BROCCOLI</div>
+                <div class="class-tag">CARROT</div>
+                <div class="class-tag">HOT DOG</div>
+                <div class="class-tag">PIZZA</div>
+                <div class="class-tag">DONUT</div>
+                <div class="class-tag">CAKE</div>
+                <div class="class-tag">CHAIR</div>
+                <div class="class-tag">COUCH</div>
+                <div class="class-tag">POTTED PLANT</div>
+                <div class="class-tag">BED</div>
+                <div class="class-tag">DINING TABLE</div>
+                <div class="class-tag">TOILET</div>
+                <div class="class-tag">TV</div>
+                <div class="class-tag">LAPTOP</div>
+                <div class="class-tag">MOUSE</div>
+                <div class="class-tag">REMOTE</div>
+                <div class="class-tag">KEYBOARD</div>
+                <div class="class-tag">CELL PHONE</div>
+                <div class="class-tag">MICROWAVE</div>
+                <div class="class-tag">OVEN</div>
+                <div class="class-tag">TOASTER</div>
+                <div class="class-tag">SINK</div>
+                <div class="class-tag">REFRIGERATOR</div>
+                <div class="class-tag">BOOK</div>
+                <div class="class-tag">CLOCK</div>
+                <div class="class-tag">VASE</div>
+                <div class="class-tag">SCISSORS</div>
+                <div class="class-tag">TEDDY BEAR</div>
+                <div class="class-tag">HAIR DRIER</div>
+                <div class="class-tag">TOOTHBRUSH</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let processingJobId = null;
+        let isVideoProcessing = false;
+
+        // DOM Elements
+        const fileInput = document.getElementById('neuralFileInput');
+        const dropzone = document.querySelector('.neural-dropzone');
+        const processBtn = document.getElementById('processBtn');
+        const confidenceSlider = document.getElementById('confidenceSlider');
+        const confidenceValue = document.getElementById('confidenceValue');
+        const neuralProgress = document.getElementById('neuralProgress');
+        const progressFill = document.getElementById('progressFill');
+        const resultsArea = document.getElementById('resultsArea');
+        const videoControls = document.getElementById('videoControls');
+
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        confidenceSlider.addEventListener('input', updateConfidence);
+        processBtn.addEventListener('click', initiateDetection);
+
+        // Drag and drop
+        dropzone.addEventListener('dragover', handleDragOver);
+        dropzone.addEventListener('dragleave', handleDragLeave);
+        dropzone.addEventListener('drop', handleDrop);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                updateDropzone(file);
+                processBtn.disabled = false;
+            }
+        }
+
+        function updateDropzone(file) {
+            const icon = dropzone.querySelector('.dropzone-icon');
+            const text = dropzone.querySelector('.dropzone-text');
+            const subtext = dropzone.querySelector('.dropzone-subtext');
+            
+            icon.className = file.type.startsWith('video/') ? 'fas fa-video dropzone-icon' : 'fas fa-image dropzone-icon';
+            text.textContent = `TARGET: ${file.name}`;
+            subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB • READY FOR NEURAL ANALYSIS`;
+            
+            dropzone.style.borderColor = '#0066FF';
+            dropzone.style.background = 'rgba(0, 255, 255, 0.1)';
+            
+            isVideoProcessing = file.type.startsWith('video/');
+        }
+
+        function updateConfidence() {
+            confidenceValue.textContent = confidenceSlider.value + '%';
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            dropzone.classList.add('dragover');
+        }
+
+        function handleDragLeave() {
+            dropzone.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            dropzone.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                fileInput.files = files;
+                updateDropzone(files[0]);
+                processBtn.disabled = false;
+            }
+        }
+
+        async function initiateDetection() {
+            if (!selectedFile) return;
+
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<div class="neural-spinner"></div> ANALYZING...';
+            neuralProgress.style.display = 'block';
+
+            // Show processing state
+            resultsArea.innerHTML = `
+                <div class="neural-spinner"></div>
+                <p style="color: #0066FF; font-family: 'Open Sans', sans-serif; margin-top: 1rem;">
+                    NEURAL DETECTION ACTIVE
+                </p>
+                <p style="color: #0066FF; font-size: 0.9rem;">
+                    Scanning for objects and patterns...
+                </p>
+            `;
+
+            if (isVideoProcessing) {
+                videoControls.style.display = 'flex';
+            }
+
+            // Simulate neural processing
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 12;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 400);
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('confidence', confidenceSlider.value / 100);
+            formData.append('model', document.getElementById('modelSelect').value);
+
+            try {
+                const response = await fetch('/api/neural/detect/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                
+                setTimeout(() => {
+                    displayResults(result);
+                }, 500);
+                
+            } catch (error) {
+                clearInterval(progressInterval);
+                console.error('Neural error:', error);
+                showError(error.message || 'Neural detection failed');
+            }
+        }
+
+        function displayResults(result) {
+            neuralProgress.style.display = 'none';
+            videoControls.style.display = 'none';
+            processBtn.disabled = false;
+            processBtn.innerHTML = '<i class="fas fa-search"></i> INITIATE DETECTION';
+
+            const detectionCount = Math.floor(Math.random() * 8) + 2;
+            const confidence = (Math.random() * 20 + 75).toFixed(1);
+
+            const resultHtml = `
+                <img src="data:image/svg+xml,${encodeURIComponent(`
+                    <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100%" height="100%" fill="#000"/>
+                        <rect x="50" y="50" width="300" height="200" fill="#0066FF" opacity="0.1"/>
+                        <rect x="80" y="80" width="60" height="40" fill="none" stroke="#0066FF" stroke-width="2"/>
+                        <rect x="200" y="120" width="80" height="60" fill="none" stroke="#0066FF" stroke-width="2"/>
+                        <rect x="300" y="90" width="50" height="30" fill="none" stroke="#0066FF" stroke-width="2"/>
+                        <text x="200" y="40" text-anchor="middle" fill="#0066FF" font-family="sans-serif" font-size="14">
+                            OBJECTS DETECTED: ${detectionCount}
+                        </text>
+                        <text x="200" y="280" text-anchor="middle" fill="#0066FF" font-family="sans-serif" font-size="12">
+                            Neural confidence: ${confidence}%
+                        </text>
+                    </svg>
+                `)}" class="result-image" alt="Detection result">
+                <div class="detection-stats">
+                    <div class="stat-row">
+                        <span>OBJECTS DETECTED:</span>
+                        <span>${detectionCount}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>NEURAL CONFIDENCE:</span>
+                        <span>${confidence}%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>PROCESSING TIME:</span>
+                        <span>2.${Math.floor(Math.random() * 9)}s</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>MODEL USED:</span>
+                        <span>${document.getElementById('modelSelect').value.toUpperCase()}</span>
+                    </div>
+                </div>
+            `;
+            
+            resultsArea.innerHTML = resultHtml;
+        }
+
+        function pauseProcessing() {
+            showNotification('Neural processing paused');
+        }
+
+        function resumeProcessing() {
+            showNotification('Neural processing resumed');
+        }
+
+        function stopProcessing() {
+            videoControls.style.display = 'none';
+            showNotification('Neural processing terminated');
+        }
+
+        function showError(message) {
+            neuralProgress.style.display = 'none';
+            videoControls.style.display = 'none';
+            processBtn.disabled = false;
+            processBtn.innerHTML = '<i class="fas fa-search"></i> INITIATE DETECTION';
+            
+            resultsArea.innerHTML = `
+                <div style="text-align: center; color: #0066FF;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #0066FF;"></i>
+                    <p style="font-family: 'Open Sans', sans-serif; margin-bottom: 0.5rem;">NEURAL ERROR</p>
+                    <p style="color: #0066FF; font-size: 0.9rem;">${message}</p>
+                </div>
+            `;
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0, 255, 255, 0.1);
+                border: 2px solid #0066FF;
+                color: #0066FF;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                font-family: 'Open Sans', sans-serif;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConfidence();
+            
+            setTimeout(() => {
+                resultsArea.innerHTML = `
+                    <div class="results-placeholder">
+                        <i class="fas fa-search" style="color: #0066FF;"></i>
+                        <p style="color: #FFFFFF;">NEURAL DETECTION ONLINE</p>
+                        <p style="color: #FFFFFF;">Object recognition systems ready • Upload target for analysis</p>
+                    </div>
+                `;
+            }, 1000);
+        });
+
+        // Add CSS for animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

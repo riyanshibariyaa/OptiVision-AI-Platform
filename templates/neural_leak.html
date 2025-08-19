@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Leak Monitor - OptiView Neural Interface</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open Sans:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #000000;
+            color: #0066FF;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Cyberpunk Background Effects */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(0, 100, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0066FF, transparent);
+            z-index: 10;
+            animation: scanLine 4s linear infinite;
+        }
+
+        /* Neural Header */
+        .neural-header {
+            position: relative;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #0066FF;
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 102, 255, 0.3);
+        }
+
+        .neural-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #0066FF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 2s infinite;
+        }
+
+        .logo-text {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 0 10px #0066FF;
+        }
+
+        .logo-subtitle {
+            font-size: 0.8rem;
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .back-btn {
+            background: rgba(0, 102, 255, 0.1);
+            border: 2px solid #0066FF;
+            color: #0066FF;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #0066FF;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            transform: translateX(-5px);
+        }
+
+        /* Main Container */
+        .neural-container {
+            position: relative;
+            z-index: 50;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Leak Monitor Title */
+        .monitor-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .monitor-title h1 {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 3rem;
+            color: #ffffff;
+            text-shadow: 0 0 20px #0066FF;
+            margin-bottom: 1rem;
+            animation: textGlow 3s ease-in-out infinite alternate;
+        }
+
+        .monitor-title p {
+            font-size: 1.2rem;
+            color: #ffffff;
+            opacity: 0.8;
+        }
+
+        /* Main Interface Grid */
+        .interface-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Upload Interface */
+        .upload-interface {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 102, 255, 0.2),
+                inset 0 1px 0 rgba(0, 255, 255, 0.1);
+        }
+
+        .interface-title {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.3rem;
+            color: #0066FF;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .neural-dropzone {
+            border: 2px dashed #0066FF;
+            border-radius: 10px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+            position: relative;
+            background: rgba(0, 102, 255, 0.02);
+        }
+
+        .neural-dropzone:hover {
+            border-color: #0066FF;
+            background: rgba(0, 255, 255, 0.05);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .neural-dropzone.dragover {
+            border-color: #0066FF;
+            background: rgba(0, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .dropzone-icon {
+            font-size: 4rem;
+            color: #0066FF;
+            margin-bottom: 1rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .dropzone-text {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.2rem;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .dropzone-subtext {
+            font-size: 0.9rem;
+            color: #ffffff;
+            opacity: 0.7;
+        }
+
+        /* Monitoring Options */
+        .monitoring-options {
+            background: rgba(0, 102, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .option-title {
+            color: #0066FF;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .monitoring-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .mode-option {
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid #0066FF;
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .mode-option.active {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #0066FF;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+
+        .mode-option:hover {
+            background: rgba(0, 255, 255, 0.15);
+        }
+
+        .mode-icon {
+            font-size: 1.5rem;
+            color: #0066FF;
+            margin-bottom: 0.5rem;
+        }
+
+        .mode-title {
+            color: #0066FF;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .sensitivity-control {
+            margin-top: 1rem;
+        }
+
+        .control-label {
+            font-family: 'Open Sans', sans-serif;
+            color: #0066FF;
+            font-weight: 500;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .value-display {
+            color: #0066FF;
+            font-weight: 700;
+        }
+
+        .neural-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #000000, #0066FF);
+            outline: none;
+            -webkit-appearance: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .neural-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #0066FF;
+            border: 2px solid #0066FF;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        /* Neural Process Button */
+        .neural-process-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #0066FF, #00AAFF);
+            border: none;
+            color: #FFFFFF;
+            padding: 1.5rem 2rem;
+            border-radius: 10px;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+        }
+
+        .neural-process-btn:hover {
+            background: linear-gradient(135deg, #00AAFF, #0066FF);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            transform: translateY(-3px);
+        }
+
+        .neural-process-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .neural-process-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .neural-process-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Live Feed Interface */
+        .live-feed-interface {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 255, 255, 0.2),
+                inset 0 1px 0 rgba(0, 255, 255, 0.1);
+        }
+
+        .live-feed {
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+            border: 1px solid #0066FF;
+            border-radius: 10px;
+            background: rgba(0, 255, 255, 0.02);
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .feed-placeholder {
+            text-align: center;
+            color: #0066FF;
+        }
+
+        .feed-placeholder i {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .leak-alert {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 0, 100, 0.2);
+            border: 2px solid #FF0064;
+            color: #FF0064;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 600;
+            display: none;
+            animation: leakPulse 1s infinite;
+        }
+
+        .leak-alert.active {
+            display: block;
+        }
+
+        .feed-video {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            border: 2px solid #0066FF;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .neural-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 255, 255, 0.1);
+            border-top: 4px solid #0066FF;
+            border-right: 4px solid #0066FF;
+            border-radius: 50%;
+            animation: neuralSpin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        /* Detection Controls */
+        .detection-controls {
+            display: none;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .control-btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #0066FF;
+            color: #0066FF;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            font-family: 'Open Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+
+        .control-btn.active {
+            background: rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        /* Monitoring Stats */
+        .monitoring-stats {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(0, 102, 255, 0.05);
+            border: 1px solid #0066FF;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #0066FF;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .stat-label {
+            color: #0066FF;
+            font-size: 0.9rem;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        /* Alert Panel */
+        .alert-panel {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .alert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .alert-card {
+            background: rgba(0, 102, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border-left: 4px solid #0066FF;
+            transition: all 0.3s ease;
+        }
+
+        .alert-card:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .alert-card.warning {
+            border-left-color: #FFAA00;
+        }
+
+        .alert-card.critical {
+            border-left-color: #FF0064;
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert-icon {
+            font-size: 1.2rem;
+            color: #ffffff;
+        }
+
+        .alert-icon.warning { color: #FFAA00; }
+        .alert-icon.critical { color: #FF0064; }
+
+        .alert-title {
+            color: #ffffff;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .alert-time {
+            color: #ffffff;
+            font-size: 0.8rem;
+            margin-left: auto;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .alert-description {
+            color: #ffffff;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .alert-location {
+            color: #ffffff;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        @keyframes textGlow {
+            0% { text-shadow: 0 0 10px #0066FF; }
+            100% { text-shadow: 0 0 20px #0066FF, 0 0 30px #0066FF; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100vh); }
+        }
+
+        @keyframes neuralSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes leakPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .interface-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .monitor-title h1 {
+                font-size: 2rem;
+            }
+            
+            .neural-container {
+                padding: 1rem;
+            }
+            
+            .monitoring-modes {
+                grid-template-columns: 1fr;
+            }
+            
+            .detection-controls {
+                flex-direction: column;
+            }
+            
+            .stats-grid, .alert-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="matrix-bg"></div>
+    <div class="grid-overlay"></div>
+    <div class="scan-line"></div>
+
+    <!-- Neural Header -->
+    <header class="neural-header">
+        <div class="neural-logo">
+            <div class="logo-icon">
+                <i class="fas fa-tint"></i>
+            </div>
+            <div>
+                <div class="logo-text">NEURAL LEAK MONITOR</div>
+                <div class="logo-subtitle">INFRASTRUCTURE MONITORING SYSTEM</div>
+            </div>
+        </div>
+        
+        <a href="/neural-dashboard" class="back-btn">
+            <i class="fas fa-arrow-left"></i> NEURAL HUB
+        </a>
+    </header>
+
+    <!-- Main Neural Container -->
+    <div class="neural-container">
+        <!-- Monitor Title -->
+        <div class="monitor-title">
+            <h1>NEURAL LEAK DETECTION</h1>
+            <p>Real-time infrastructure monitoring with predictive leak analysis and advanced neural networks</p>
+        </div>
+
+        <!-- Main Interface -->
+        <div class="interface-grid">
+            <!-- Upload Interface -->
+            <div class="upload-interface">
+                <h2 class="interface-title">
+                    <i class="fas fa-video"></i>
+                    MONITORING SETUP
+                </h2>
+                
+                <div class="neural-dropzone" onclick="document.getElementById('neuralFileInput').click()">
+                    <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
+                    <div class="dropzone-text">UPLOAD MONITORING SOURCE</div>
+                    <div class="dropzone-subtext">MP4, AVI, LIVE CAMERA FEED</div>
+                </div>
+                
+                <input type="file" id="neuralFileInput" style="display: none;" accept="video/*">
+                
+                <div class="monitoring-options">
+                    <div class="option-title">
+                        <i class="fas fa-cog"></i>
+                        MONITORING MODE
+                    </div>
+                    <div class="monitoring-modes">
+                        <div class="mode-option active" data-mode="realtime">
+                            <i class="fas fa-video mode-icon"></i>
+                            <div class="mode-title">REAL-TIME</div>
+                        </div>
+                        <div class="mode-option" data-mode="batch">
+                            <i class="fas fa-file-video mode-icon"></i>
+                            <div class="mode-title">BATCH ANALYSIS</div>
+                        </div>
+                    </div>
+                    
+                    <div class="sensitivity-control">
+                        <div class="control-label">
+                            <span>DETECTION SENSITIVITY</span>
+                            <span class="value-display" id="sensitivityValue">75%</span>
+                        </div>
+                        <input type="range" class="neural-slider" id="sensitivitySlider" min="25" max="100" value="75">
+                    </div>
+                </div>
+                
+                <button class="neural-process-btn" id="startBtn" disabled>
+                    <i class="fas fa-play"></i>
+                    START MONITORING
+                </button>
+            </div>
+
+            <!-- Live Feed Interface -->
+            <div class="live-feed-interface">
+                <h2 class="interface-title">
+                    <i class="fas fa-desktop"></i>
+                    LIVE MONITORING FEED
+                </h2>
+                
+                <div class="live-feed" id="liveFeed">
+                    <div class="leak-alert" id="leakAlert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        LEAK DETECTED!
+                    </div>
+                    <div class="feed-placeholder">
+                        <i class="fas fa-video"></i>
+                        <p>NEURAL MONITORING STANDBY</p>
+                        <p>Awaiting video source for leak detection...</p>
+                    </div>
+                </div>
+                
+                <div class="detection-controls" id="detectionControls">
+                    <button class="control-btn" id="pauseBtn">
+                        <i class="fas fa-pause"></i> PAUSE
+                    </button>
+                    <button class="control-btn" id="resumeBtn" style="display: none;">
+                        <i class="fas fa-play"></i> RESUME
+                    </button>
+                    <button class="control-btn" id="stopBtn">
+                        <i class="fas fa-stop"></i> TERMINATE
+                    </button>
+                    <button class="control-btn" id="recordBtn">
+                        <i class="fas fa-record-vinyl"></i> RECORD
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitoring Statistics -->
+        <div class="monitoring-stats">
+            <h2 class="interface-title">
+                <i class="fas fa-chart-line"></i>
+                NEURAL MONITORING STATISTICS
+            </h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-eye stat-icon"></i>
+                    <span class="stat-number" id="activeMonitors">0</span>
+                    <div class="stat-label">ACTIVE MONITORS</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exclamation-triangle stat-icon"></i>
+                    <span class="stat-number" id="leaksDetected">0</span>
+                    <div class="stat-label">LEAKS DETECTED</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-clock stat-icon"></i>
+                    <span class="stat-number" id="uptime">00:00:00</span>
+                    <div class="stat-label">SYSTEM UPTIME</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-thermometer-half stat-icon"></i>
+                    <span class="stat-number" id="avgResponse">2.3s</span>
+                    <div class="stat-label">AVG RESPONSE</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Panel -->
+        <div class="alert-panel">
+            <h2 class="interface-title">
+                <i class="fas fa-bell"></i>
+                NEURAL MONITORING ALERTS
+            </h2>
+            <div class="alert-grid" id="alertGrid">
+                <div class="alert-card">
+                    <div class="alert-header">
+                        <i class="fas fa-info-circle alert-icon"></i>
+                        <span class="alert-title">SYSTEM ONLINE</span>
+                        <span class="alert-time">JUST NOW</span>
+                    </div>
+                    <div class="alert-description">
+                        Neural leak detection system is online and monitoring for infrastructure anomalies.
+                    </div>
+                    <div class="alert-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        SYSTEM STATUS
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let monitoringActive = false;
+        let currentMode = 'realtime';
+        let leakCount = 0;
+        let startTime = null;
+        let uptimeInterval = null;
+
+        // DOM Elements
+        const fileInput = document.getElementById('neuralFileInput');
+        const dropzone = document.querySelector('.neural-dropzone');
+        const startBtn = document.getElementById('startBtn');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        const liveFeed = document.getElementById('liveFeed');
+        const detectionControls = document.getElementById('detectionControls');
+        const leakAlert = document.getElementById('leakAlert');
+        const alertGrid = document.getElementById('alertGrid');
+
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        sensitivitySlider.addEventListener('input', updateSensitivity);
+        startBtn.addEventListener('click', toggleMonitoring);
+
+        // Mode selection
+        document.querySelectorAll('.mode-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
+                this.classList.add('active');
+                currentMode = this.dataset.mode;
+            });
+        });
+
+        // Drag and drop
+        dropzone.addEventListener('dragover', handleDragOver);
+        dropzone.addEventListener('dragleave', handleDragLeave);
+        dropzone.addEventListener('drop', handleDrop);
+
+        // Control buttons
+        document.getElementById('pauseBtn').addEventListener('click', pauseMonitoring);
+        document.getElementById('resumeBtn').addEventListener('click', resumeMonitoring);
+        document.getElementById('stopBtn').addEventListener('click', stopMonitoring);
+        document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                updateDropzone(file);
+                startBtn.disabled = false;
+            }
+        }
+
+        function updateDropzone(file) {
+            const icon = dropzone.querySelector('.dropzone-icon');
+            const text = dropzone.querySelector('.dropzone-text');
+            const subtext = dropzone.querySelector('.dropzone-subtext');
+            
+            icon.className = 'fas fa-video dropzone-icon';
+            text.textContent = `SOURCE: ${file.name}`;
+            subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB • READY FOR NEURAL MONITORING`;
+            
+            dropzone.style.borderColor = '#0066FF';
+            dropzone.style.background = 'rgba(0, 255, 255, 0.1)';
+        }
+
+        function updateSensitivity() {
+            sensitivityValue.textContent = sensitivitySlider.value + '%';
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            dropzone.classList.add('dragover');
+        }
+
+        function handleDragLeave() {
+            dropzone.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            dropzone.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                fileInput.files = files;
+                updateDropzone(files[0]);
+                startBtn.disabled = false;
+            }
+        }
+
+        async function toggleMonitoring() {
+            if (!monitoringActive) {
+                await startMonitoring();
+            } else {
+                stopMonitoring();
+            }
+        }
+
+        async function startMonitoring() {
+            if (!selectedFile && currentMode === 'batch') {
+                showNotification('Please select a video file for batch analysis');
+                return;
+            }
+
+            monitoringActive = true;
+            startBtn.innerHTML = '<div class="neural-spinner"></div> INITIALIZING...';
+            startBtn.disabled = true;
+
+            try {
+                // Show monitoring state
+                liveFeed.innerHTML = `
+                    <div class="neural-spinner"></div>
+                    <p style="color: #0066FF; font-family: 'Open Sans', sans-serif; margin-top: 1rem;">
+                        NEURAL MONITORING ACTIVE
+                    </p>
+                    <p style="color: #0066FF; font-size: 0.9rem;">
+                        Scanning infrastructure for leak patterns...
+                    </p>
+                `;
+
+                // Upload file if in batch mode
+                if (selectedFile && currentMode === 'batch') {
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+                    formData.append('sensitivity', sensitivitySlider.value);
+                    formData.append('mode', currentMode);
+
+                    const response = await fetch('/api/neural/leak/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (result.status !== 'NEURAL_MONITORING') {
+                        throw new Error(result.message || 'Monitoring initialization failed');
+                    }
+                }
+
+                // Start monitoring interface
+                startTime = new Date();
+                updateActiveMonitors(1);
+                startUptime();
+                
+                // Show live feed simulation
+                setTimeout(() => {
+                    showLiveFeed();
+                }, 2000);
+                
+                // Show controls
+                detectionControls.style.display = 'flex';
+                startBtn.innerHTML = '<i class="fas fa-stop"></i> STOP MONITORING';
+                startBtn.disabled = false;
+
+                // Start simulated leak detection
+                startLeakSimulation();
+
+                addAlert('info', 'MONITORING STARTED', 'Neural leak detection is now active and monitoring for anomalies.');
+
+            } catch (error) {
+                console.error('Monitoring error:', error);
+                monitoringActive = false;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> START MONITORING';
+                startBtn.disabled = false;
+                addAlert('critical', 'MONITORING FAILED', error.message);
+            }
+        }
+
+        function pauseMonitoring() {
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('resumeBtn').style.display = 'block';
+            addAlert('warning', 'MONITORING PAUSED', 'Detection has been temporarily paused.');
+        }
+
+        function resumeMonitoring() {
+            document.getElementById('pauseBtn').style.display = 'block';
+            document.getElementById('resumeBtn').style.display = 'none';
+            addAlert('info', 'MONITORING RESUMED', 'Detection has been resumed.');
+        }
+
+        function stopMonitoring() {
+            monitoringActive = false;
+            clearInterval(uptimeInterval);
+            
+            // Reset UI
+            liveFeed.innerHTML = `
+                <div class="feed-placeholder">
+                    <i class="fas fa-video" style="color: #0066FF;"></i>
+                    <p style="color: #0066FF;">NEURAL MONITORING STANDBY</p>
+                    <p style="color: #0066FF;">Awaiting video source for leak detection...</p>
+                </div>
+            `;
+            
+            detectionControls.style.display = 'none';
+            startBtn.innerHTML = '<i class="fas fa-play"></i> START MONITORING';
+            startBtn.disabled = selectedFile ? false : true;
+            
+            updateActiveMonitors(0);
+            addAlert('info', 'MONITORING STOPPED', 'Neural leak detection has been terminated.');
+        }
+
+        function toggleRecording() {
+            const recordBtn = document.getElementById('recordBtn');
+            const isRecording = recordBtn.classList.contains('active');
+            
+            if (isRecording) {
+                recordBtn.classList.remove('active');
+                recordBtn.innerHTML = '<i class="fas fa-record-vinyl"></i> RECORD';
+                addAlert('info', 'RECORDING STOPPED', 'Video recording has been stopped.');
+            } else {
+                recordBtn.classList.add('active');
+                recordBtn.innerHTML = '<i class="fas fa-stop"></i> STOP REC';
+                addAlert('info', 'RECORDING STARTED', 'Video recording has been started.');
+            }
+        }
+
+        function showLiveFeed() {
+            liveFeed.innerHTML = `
+                <div class="leak-alert" id="leakAlert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    LEAK DETECTED!
+                </div>
+                <div style="width: 100%; height: 350px; background: linear-gradient(45deg, #000033, #000066); display: flex; align-items: center; justify-content: center; color: white; border-radius: 10px; position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('data:image/svg+xml,${encodeURIComponent(`
+                        <svg width="400" height="350" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="100%" height="100%" fill="#000033"/>
+                            <g stroke="#0066FF" stroke-width="1" opacity="0.3">
+                                <line x1="0" y1="50" x2="400" y2="50"/>
+                                <line x1="0" y1="100" x2="400" y2="100"/>
+                                <line x1="0" y1="150" x2="400" y2="150"/>
+                                <line x1="0" y1="200" x2="400" y2="200"/>
+                                <line x1="0" y1="250" x2="400" y2="250"/>
+                                <line x1="0" y1="300" x2="400" y2="300"/>
+                                <line x1="50" y1="0" x2="50" y2="350"/>
+                                <line x1="100" y1="0" x2="100" y2="350"/>
+                                <line x1="150" y1="0" x2="150" y2="350"/>
+                                <line x1="200" y1="0" x2="200" y2="350"/>
+                                <line x1="250" y1="0" x2="250" y2="350"/>
+                                <line x1="300" y1="0" x2="300" y2="350"/>
+                                <line x1="350" y1="0" x2="350" y2="350"/>
+                            </g>
+                            <rect x="100" y="120" width="80" height="60" fill="none" stroke="#0066FF" stroke-width="2"/>
+                            <rect x="250" y="80" width="60" height="40" fill="none" stroke="#0066FF" stroke-width="2"/>
+                            <text x="200" y="30" text-anchor="middle" fill="#0066FF" font-family="sans-serif" font-size="12">
+                                NEURAL MONITORING ACTIVE
+                            </text>
+                            <text x="200" y="330" text-anchor="middle" fill="#0066FF" font-family="sans-serif" font-size="10">
+                                Sensitivity: ${sensitivitySlider.value}% • Real-time Analysis
+                            </text>
+                        </svg>
+                    `)}') center/cover;"></div>
+                    <div style="position: relative; z-index: 10; text-align: center;">
+                        <i class="fas fa-video" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.7; animation: pulse 2s infinite;"></i>
+                        <div style="font-family: 'Open Sans', sans-serif; font-size: 1.2rem; margin-bottom: 0.5rem;">LIVE FEED ACTIVE</div>
+                        <div style="font-size: 0.9rem; opacity: 0.7;">Neural leak detection monitoring...</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function startLeakSimulation() {
+            // Simulate occasional leak detections
+            const simulateLeaks = () => {
+                if (monitoringActive && Math.random() < 0.15) { // 15% chance every 8 seconds
+                    detectLeak();
+                }
+                
+                if (monitoringActive) {
+                    setTimeout(simulateLeaks, 8000);
+                }
+            };
+            
+            setTimeout(simulateLeaks, 12000); // Start after 12 seconds
+        }
+
+        function detectLeak() {
+            leakCount++;
+            updateLeaksDetected(leakCount);
+            
+            // Show leak alert
+            const alert = document.getElementById('leakAlert');
+            if (alert) {
+                alert.classList.add('active');
+                setTimeout(() => {
+                    alert.classList.remove('active');
+                }, 4000);
+            }
+            
+            // Add alert to panel
+            const locations = ['SECTOR A-1', 'PIPELINE B-3', 'JUNCTION C-2', 'VALVE D-4', 'SECTOR E-1'];
+            const location = locations[Math.floor(Math.random() * locations.length)];
+            const confidence = Math.floor(Math.random() * 20) + 80;
+            
+            addAlert('critical', 'LEAK DETECTED', `Potential infrastructure leak detected. Confidence: ${confidence}%`, location);
+        }
+
+        function startUptime() {
+            uptimeInterval = setInterval(() => {
+                if (startTime) {
+                    const now = new Date();
+                    const diff = now - startTime;
+                    const hours = Math.floor(diff / 3600000);
+                    const minutes = Math.floor((diff % 3600000) / 60000);
+                    const seconds = Math.floor((diff % 60000) / 1000);
+                    
+                    document.getElementById('uptime').textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function updateActiveMonitors(count) {
+            document.getElementById('activeMonitors').textContent = count;
+        }
+
+        function updateLeaksDetected(count) {
+            document.getElementById('leaksDetected').textContent = count;
+        }
+
+        function addAlert(type, title, description, location = null) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            
+            const alertCard = document.createElement('div');
+            alertCard.className = `alert-card ${type}`;
+            alertCard.innerHTML = `
+                <div class="alert-header">
+                    <i class="fas ${getAlertIcon(type)} alert-icon ${type}"></i>
+                    <span class="alert-title">${title}</span>
+                    <span class="alert-time">${timeString}</span>
+                </div>
+                <div class="alert-description">${description}</div>
+                ${location ? `<div class="alert-location"><i class="fas fa-map-marker-alt"></i>${location}</div>` : ''}
+            `;
+            
+            // Add to top of alert grid
+            alertGrid.insertBefore(alertCard, alertGrid.firstChild);
+            
+            // Remove old alerts (keep only last 10)
+            while (alertGrid.children.length > 10) {
+                alertGrid.removeChild(alertGrid.lastChild);
+            }
+        }
+
+        function getAlertIcon(type) {
+            switch (type) {
+                case 'info': return 'fa-info-circle';
+                case 'warning': return 'fa-exclamation-triangle';
+                case 'critical': return 'fa-exclamation-circle';
+                default: return 'fa-info-circle';
+            }
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0, 255, 255, 0.1);
+                border: 2px solid #0066FF;
+                color: #0066FF;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                font-family: 'Open Sans', sans-serif;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSensitivity();
+            
+            // Enable camera access for real-time mode
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                startBtn.disabled = false; // Enable for camera access
+            }
+            
+            setTimeout(() => {
+                liveFeed.innerHTML = `
+                    <div class="feed-placeholder">
+                        <i class="fas fa-video" style="color: #0066FF;"></i>
+                        <p style="color: #FFFFFF;">NEURAL MONITORING ONLINE</p>
+                        <p style="color: #FFFFFF;">Infrastructure monitoring systems ready • Upload source for analysis</p>
+                    </div>
+                `;
+            }, 1000);
+        });
+
+        // Add CSS for animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

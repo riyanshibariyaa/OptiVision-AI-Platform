@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Object Detection - OptiView</title>
+    <title>Blur Detection & Privacy - OptiView</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #4ecdc4 0%, #2c3e50 100%);
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
             min-height: 100vh;
             color: #333;
         }
@@ -176,7 +176,7 @@
             display: block;
         }
 
-        .confidence-slider {
+        .intensity-slider {
             width: 100%;
             height: 6px;
             border-radius: 3px;
@@ -185,7 +185,7 @@
             -webkit-appearance: none;
         }
 
-        .confidence-slider::-webkit-slider-thumb {
+        .intensity-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 20px;
@@ -195,31 +195,35 @@
             cursor: pointer;
         }
 
-        .confidence-value {
+        .intensity-value {
             color: white;
             font-weight: 600;
             margin-left: 0.5rem;
         }
 
-        .model-select {
-            width: 100%;
-            padding: 0.8rem;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
+        .detection-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
 
-        .model-select option {
-            background: #2c3e50;
+        .option-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             color: white;
+        }
+
+        .option-checkbox input {
+            width: 18px;
+            height: 18px;
+            accent-color: white;
         }
 
         .process-btn {
             width: 100%;
             background: linear-gradient(45deg, #fff, #f8f9fa);
-            color: #4ecdc4;
+            color: #ff6b6b;
             border: none;
             padding: 1rem 2rem;
             border-radius: 15px;
@@ -273,20 +277,6 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        .detection-stats {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 1rem;
-            margin-top: 1rem;
-            color: white;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
         .download-btn {
             background: rgba(255, 255, 255, 0.2);
             color: white;
@@ -334,7 +324,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        .object-classes {
+        .features-info {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 20px;
@@ -343,47 +333,34 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .classes-grid {
+        .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 0.5rem;
-            margin-top: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
         }
 
-        .class-tag {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.8);
-            padding: 0.5rem;
-            border-radius: 8px;
+        .feature-item {
             text-align: center;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
         }
 
-        .class-tag:hover {
-            background: rgba(255, 255, 255, 0.2);
+        .feature-icon {
+            font-size: 2rem;
             color: white;
+            margin-bottom: 1rem;
         }
 
-        .video-controls {
-            display: none;
-            margin-top: 1rem;
-            text-align: center;
-        }
-
-        .video-controls button {
-            background: rgba(255, 255, 255, 0.2);
+        .feature-title {
             color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            margin: 0 0.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
 
-        .video-controls button:hover {
-            background: rgba(255, 255, 255, 0.3);
+        .feature-desc {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
         }
 
         @media (max-width: 768px) {
@@ -399,8 +376,8 @@
                 font-size: 2rem;
             }
             
-            .classes-grid {
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            .detection-options {
+                flex-direction: column;
             }
         }
     </style>
@@ -422,10 +399,10 @@
     <div class="container">
         <div class="page-title">
             <h1>
-                <i class="fas fa-search"></i>
-                Object Detection
+                <i class="fas fa-eye-slash"></i>
+                Blur Detection & Privacy
             </h1>
-            <p>Identify and locate multiple objects in images and videos with high accuracy using advanced YOLO models.</p>
+            <p>Automatically detect and blur faces, license plates, and sensitive content to protect privacy in your images and videos.</p>
         </div>
 
         <div class="main-content">
@@ -438,7 +415,7 @@
                 <div class="upload-area" onclick="document.getElementById('fileInput').click()">
                     <i class="fas fa-cloud-upload-alt upload-icon"></i>
                     <div class="upload-text">Click to upload or drag & drop</div>
-                    <div class="upload-subtext">Supports JPG, PNG, MP4, AVI (Max: 200MB)</div>
+                    <div class="upload-subtext">Supports JPG, PNG, MP4, AVI (Max: 100MB)</div>
                 </div>
                 
                 <input type="file" id="fileInput" class="file-input" accept="image/*,video/*">
@@ -446,26 +423,27 @@
                 <div class="controls-section">
                     <div class="control-group">
                         <label class="control-label">
-                            Confidence Threshold
-                            <span class="confidence-value" id="confidenceValue">50%</span>
+                            Blur Intensity
+                            <span class="intensity-value" id="intensityValue">50%</span>
                         </label>
-                        <input type="range" class="confidence-slider" id="confidenceSlider" min="10" max="95" value="50">
+                        <input type="range" class="intensity-slider" id="intensitySlider" min="25" max="100" value="50">
                     </div>
                     
-                    <div class="control-group">
-                        <label class="control-label">Detection Model</label>
-                        <select class="model-select" id="modelSelect">
-                            <option value="yolov5s">YOLOv5s (Fast)</option>
-                            <option value="yolov5m">YOLOv5m (Balanced)</option>
-                            <option value="yolov5l">YOLOv5l (Accurate)</option>
-                            <option value="yolov5x">YOLOv5x (Best Quality)</option>
-                        </select>
+                    <div class="detection-options">
+                        <label class="option-checkbox">
+                            <input type="checkbox" id="detectFaces" checked>
+                            <span>Faces</span>
+                        </label>
+                        <label class="option-checkbox">
+                            <input type="checkbox" id="detectPlates" checked>
+                            <span>License Plates</span>
+                        </label>
                     </div>
                 </div>
                 
                 <button class="process-btn" id="processBtn" disabled>
                     <i class="fas fa-play"></i>
-                    Start Detection
+                    Start Processing
                 </button>
                 
                 <div class="progress-bar" id="progressBar">
@@ -475,114 +453,45 @@
 
             <div class="results-section">
                 <h2 class="section-title">
-                    <i class="fas fa-crosshairs"></i>
-                    Detection Results
+                    <i class="fas fa-image"></i>
+                    Results
                 </h2>
                 
                 <div class="results-area" id="resultsArea">
                     <div class="results-placeholder">
-                        <i class="fas fa-search"></i>
-                        <p>Detection results will appear here</p>
+                        <i class="fas fa-image"></i>
+                        <p>Processed content will appear here</p>
                     </div>
-                </div>
-                
-                <div class="video-controls" id="videoControls">
-                    <button onclick="pauseProcessing()">
-                        <i class="fas fa-pause"></i> Pause
-                    </button>
-                    <button onclick="resumeProcessing()">
-                        <i class="fas fa-play"></i> Resume
-                    </button>
-                    <button onclick="stopProcessing()">
-                        <i class="fas fa-stop"></i> Stop
-                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="object-classes">
+        <div class="features-info">
             <h2 class="section-title">
-                <i class="fas fa-tags"></i>
-                Detectable Objects (80+ Classes)
+                <i class="fas fa-star"></i>
+                Key Features
             </h2>
-            <div class="classes-grid">
-                <div class="class-tag">Person</div>
-                <div class="class-tag">Car</div>
-                <div class="class-tag">Bicycle</div>
-                <div class="class-tag">Motorcycle</div>
-                <div class="class-tag">Airplane</div>
-                <div class="class-tag">Bus</div>
-                <div class="class-tag">Train</div>
-                <div class="class-tag">Truck</div>
-                <div class="class-tag">Boat</div>
-                <div class="class-tag">Traffic Light</div>
-                <div class="class-tag">Fire Hydrant</div>
-                <div class="class-tag">Stop Sign</div>
-                <div class="class-tag">Cat</div>
-                <div class="class-tag">Dog</div>
-                <div class="class-tag">Horse</div>
-                <div class="class-tag">Sheep</div>
-                <div class="class-tag">Cow</div>
-                <div class="class-tag">Elephant</div>
-                <div class="class-tag">Bear</div>
-                <div class="class-tag">Zebra</div>
-                <div class="class-tag">Giraffe</div>
-                <div class="class-tag">Backpack</div>
-                <div class="class-tag">Umbrella</div>
-                <div class="class-tag">Handbag</div>
-                <div class="class-tag">Tie</div>
-                <div class="class-tag">Suitcase</div>
-                <div class="class-tag">Frisbee</div>
-                <div class="class-tag">Skis</div>
-                <div class="class-tag">Snowboard</div>
-                <div class="class-tag">Sports Ball</div>
-                <div class="class-tag">Kite</div>
-                <div class="class-tag">Baseball Bat</div>
-                <div class="class-tag">Baseball Glove</div>
-                <div class="class-tag">Skateboard</div>
-                <div class="class-tag">Surfboard</div>
-                <div class="class-tag">Tennis Racket</div>
-                <div class="class-tag">Bottle</div>
-                <div class="class-tag">Wine Glass</div>
-                <div class="class-tag">Cup</div>
-                <div class="class-tag">Fork</div>
-                <div class="class-tag">Knife</div>
-                <div class="class-tag">Spoon</div>
-                <div class="class-tag">Bowl</div>
-                <div class="class-tag">Banana</div>
-                <div class="class-tag">Apple</div>
-                <div class="class-tag">Sandwich</div>
-                <div class="class-tag">Orange</div>
-                <div class="class-tag">Broccoli</div>
-                <div class="class-tag">Carrot</div>
-                <div class="class-tag">Hot Dog</div>
-                <div class="class-tag">Pizza</div>
-                <div class="class-tag">Donut</div>
-                <div class="class-tag">Cake</div>
-                <div class="class-tag">Chair</div>
-                <div class="class-tag">Couch</div>
-                <div class="class-tag">Potted Plant</div>
-                <div class="class-tag">Bed</div>
-                <div class="class-tag">Dining Table</div>
-                <div class="class-tag">Toilet</div>
-                <div class="class-tag">TV</div>
-                <div class="class-tag">Laptop</div>
-                <div class="class-tag">Mouse</div>
-                <div class="class-tag">Remote</div>
-                <div class="class-tag">Keyboard</div>
-                <div class="class-tag">Cell Phone</div>
-                <div class="class-tag">Microwave</div>
-                <div class="class-tag">Oven</div>
-                <div class="class-tag">Toaster</div>
-                <div class="class-tag">Sink</div>
-                <div class="class-tag">Refrigerator</div>
-                <div class="class-tag">Book</div>
-                <div class="class-tag">Clock</div>
-                <div class="class-tag">Vase</div>
-                <div class="class-tag">Scissors</div>
-                <div class="class-tag">Teddy Bear</div>
-                <div class="class-tag">Hair Drier</div>
-                <div class="class-tag">Toothbrush</div>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <i class="fas fa-user-secret feature-icon"></i>
+                    <div class="feature-title">Face Detection</div>
+                    <div class="feature-desc">Advanced AI detects faces with high accuracy and applies customizable blur effects</div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-car feature-icon"></i>
+                    <div class="feature-title">License Plate Recognition</div>
+                    <div class="feature-desc">Automatically identifies and blurs vehicle license plates for privacy compliance</div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-video feature-icon"></i>
+                    <div class="feature-title">Video Processing</div>
+                    <div class="feature-desc">Process entire videos with real-time preview and batch processing capabilities</div>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-sliders-h feature-icon"></i>
+                    <div class="feature-title">Customizable Intensity</div>
+                    <div class="feature-desc">Adjust blur intensity from subtle to complete privacy protection</div>
+                </div>
             </div>
         </div>
     </div>
@@ -590,23 +499,21 @@
     <script>
         let selectedFile = null;
         let processingJobId = null;
-        let isVideoProcessing = false;
 
         // DOM Elements
         const fileInput = document.getElementById('fileInput');
         const uploadArea = document.querySelector('.upload-area');
         const processBtn = document.getElementById('processBtn');
-        const confidenceSlider = document.getElementById('confidenceSlider');
-        const confidenceValue = document.getElementById('confidenceValue');
+        const intensitySlider = document.getElementById('intensitySlider');
+        const intensityValue = document.getElementById('intensityValue');
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
         const resultsArea = document.getElementById('resultsArea');
-        const videoControls = document.getElementById('videoControls');
 
         // Event Listeners
         fileInput.addEventListener('change', handleFileSelect);
-        confidenceSlider.addEventListener('input', updateConfidence);
-        processBtn.addEventListener('click', startDetection);
+        intensitySlider.addEventListener('input', updateIntensity);
+        processBtn.addEventListener('click', startProcessing);
 
         // Drag and drop handlers
         uploadArea.addEventListener('dragover', handleDragOver);
@@ -629,13 +536,11 @@
             
             icon.className = file.type.startsWith('video/') ? 'fas fa-video upload-icon' : 'fas fa-image upload-icon';
             text.textContent = file.name;
-            subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB - Ready for detection`;
-            
-            isVideoProcessing = file.type.startsWith('video/');
+            subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB - Ready to process`;
         }
 
-        function updateConfidence() {
-            confidenceValue.textContent = confidenceSlider.value + '%';
+        function updateIntensity() {
+            intensityValue.textContent = intensitySlider.value + '%';
         }
 
         function handleDragOver(event) {
@@ -660,20 +565,21 @@
             }
         }
 
-        async function startDetection() {
+        async function startProcessing() {
             if (!selectedFile) return;
 
             processBtn.disabled = true;
-            processBtn.innerHTML = '<div class="spinner"></div> Detecting...';
+            processBtn.innerHTML = '<div class="spinner"></div> Processing...';
             progressBar.style.display = 'block';
 
             const formData = new FormData();
             formData.append('file', selectedFile);
-            formData.append('confidence', confidenceSlider.value / 100);
-            formData.append('model', document.getElementById('modelSelect').value);
+            formData.append('intensity', intensitySlider.value);
+            formData.append('detect_faces', document.getElementById('detectFaces').checked);
+            formData.append('detect_plates', document.getElementById('detectPlates').checked);
 
             try {
-                const response = await fetch('/api/object_detection/upload', {
+                const response = await fetch('/blur/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -685,65 +591,50 @@
                     
                     if (result.type === 'video') {
                         // Start video processing monitoring
-                        videoControls.style.display = 'block';
                         monitorVideoProcessing(result.job_id);
                     } else {
                         // Image processing complete
                         displayResults(result);
                     }
                 } else {
-                    throw new Error(result.error || 'Detection failed');
+                    throw new Error(result.error || 'Processing failed');
                 }
             } catch (error) {
-                console.error('Detection error:', error);
-                showError('Detection failed. Please try again.');
+                console.error('Processing error:', error);
+                showError('Processing failed. Please try again.');
             }
         }
 
         function monitorVideoProcessing(jobId) {
-            // Create video feed for real-time processing
-            const videoFeed = document.createElement('img');
-            videoFeed.src = `/api/object_detection/video_feed?job_id=${jobId}`;
-            videoFeed.className = 'result-image';
-            videoFeed.style.border = '2px solid #4ecdc4';
-            
-            resultsArea.innerHTML = '';
-            resultsArea.appendChild(videoFeed);
-            
-            // Add processing status
-            const statusDiv = document.createElement('div');
-            statusDiv.className = 'detection-stats';
-            statusDiv.innerHTML = '<div class="stat-item"><span>Status:</span><span>Processing video...</span></div>';
-            resultsArea.appendChild(statusDiv);
-            
-            // Simulate progress
+            // Simulate progress for video processing
             let progress = 0;
             const progressInterval = setInterval(() => {
-                progress += Math.random() * 5;
-                if (progress > 95) progress = 95;
+                progress += Math.random() * 10;
+                if (progress > 90) progress = 90;
                 
                 progressFill.style.width = progress + '%';
                 
-                if (progress >= 95) {
+                if (progress >= 90) {
                     clearInterval(progressInterval);
+                    // Check for completion
                     checkProcessingStatus(jobId);
                 }
-            }, 1000);
+            }, 500);
         }
 
         async function checkProcessingStatus(jobId) {
             try {
-                const response = await fetch(`/api/object_detection/status/${jobId}`);
+                const response = await fetch(`/blur/status/${jobId}`);
                 const status = await response.json();
                 
                 if (status.status === 'complete') {
                     progressFill.style.width = '100%';
                     setTimeout(() => {
-                        displayVideoResults(status);
+                        displayResults(status);
                     }, 500);
                 } else {
                     // Keep checking
-                    setTimeout(() => checkProcessingStatus(jobId), 2000);
+                    setTimeout(() => checkProcessingStatus(jobId), 1000);
                 }
             } catch (error) {
                 showError('Failed to check processing status');
@@ -753,28 +644,11 @@
         function displayResults(result) {
             progressBar.style.display = 'none';
             processBtn.disabled = false;
-            processBtn.innerHTML = '<i class="fas fa-play"></i> Start Detection';
-
-            const detectionCount = result.results ? result.results.length : 0;
-            const uniqueClasses = result.results ? [...new Set(result.results.map(r => r.class))] : [];
+            processBtn.innerHTML = '<i class="fas fa-play"></i> Start Processing';
 
             const resultHtml = `
-                <img src="${result.output_url}" class="result-image" alt="Detection result">
-                <div class="detection-stats">
-                    <div class="stat-item">
-                        <span>Objects Detected:</span>
-                        <span>${detectionCount}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Unique Classes:</span>
-                        <span>${uniqueClasses.length}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Confidence:</span>
-                        <span>${confidenceSlider.value}%+</span>
-                    </div>
-                </div>
-                <button class="download-btn" onclick="downloadResult('${result.output_url}')">
+                <img src="${result.output_url || result.result_url}" class="result-image" alt="Processed result">
+                <button class="download-btn" onclick="downloadResult('${result.output_url || result.result_url}')">
                     <i class="fas fa-download"></i> Download Result
                 </button>
             `;
@@ -782,71 +656,17 @@
             resultsArea.innerHTML = resultHtml;
         }
 
-        function displayVideoResults(result) {
-            progressBar.style.display = 'none';
-            videoControls.style.display = 'none';
-            processBtn.disabled = false;
-            processBtn.innerHTML = '<i class="fas fa-play"></i> Start Detection';
-
-            const resultHtml = `
-                <video controls class="result-image" style="max-width: 100%; max-height: 400px;">
-                    <source src="${result.output_path}" type="video/mp4">
-                    Your browser does not support video playback.
-                </video>
-                <div class="detection-stats">
-                    <div class="stat-item">
-                        <span>Total Frames:</span>
-                        <span>${result.total_frames || 0}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Processed Frames:</span>
-                        <span>${result.processed_frames || 0}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span>Total Detections:</span>
-                        <span>${result.total_detections || 0}</span>
-                    </div>
-                </div>
-                <button class="download-btn" onclick="downloadResult('${result.output_path}')">
-                    <i class="fas fa-download"></i> Download Video
-                </button>
-            `;
-            
-            resultsArea.innerHTML = resultHtml;
-        }
-
-        function pauseProcessing() {
-            if (processingJobId) {
-                fetch(`/api/object_detection/pause/${processingJobId}`, { method: 'POST' });
-            }
-        }
-
-        function resumeProcessing() {
-            if (processingJobId) {
-                fetch(`/api/object_detection/resume/${processingJobId}`, { method: 'POST' });
-            }
-        }
-
-        function stopProcessing() {
-            if (processingJobId) {
-                fetch(`/api/object_detection/stop/${processingJobId}`, { method: 'POST' });
-                videoControls.style.display = 'none';
-                showError('Processing stopped by user');
-            }
-        }
-
         function downloadResult(url) {
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'detection_result.' + (isVideoProcessing ? 'mp4' : 'jpg');
+            link.download = 'blurred_result.' + (selectedFile.type.startsWith('video/') ? 'mp4' : 'jpg');
             link.click();
         }
 
         function showError(message) {
             progressBar.style.display = 'none';
-            videoControls.style.display = 'none';
             processBtn.disabled = false;
-            processBtn.innerHTML = '<i class="fas fa-play"></i> Start Detection';
+            processBtn.innerHTML = '<i class="fas fa-play"></i> Start Processing';
             
             resultsArea.innerHTML = `
                 <div class="results-placeholder">

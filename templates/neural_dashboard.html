@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiView - Neural Vision Interface</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open Sans:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #000000;
+            color: #0066FF;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Cyberpunk Background Effects */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(0, 100, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0066FF, transparent);
+            z-index: 10;
+            animation: scanLine 4s linear infinite;
+        }
+
+        /* Neural Header */
+        .neural-header {
+            position: relative;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #0066FF;
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 102, 255, 0.3);
+        }
+
+        .neural-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #0066ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 2s infinite;
+        }
+
+        .logo-text {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 0 10px #0066FF;
+            animation: textGlow 3s ease-in-out infinite alternate;
+        }
+
+        .logo-subtitle {
+            font-size: 0.9rem;
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .neural-status {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid #0066FF;
+            border-radius: 20px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #0066FF;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Main Container */
+        .neural-container {
+            position: relative;
+            z-index: 50;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Neural Network Visualization */
+        .neural-network {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 102, 255, 0.2),
+                inset 0 1px 0 rgba(0, 255, 255, 0.1);
+        }
+
+        .network-title {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.5rem;
+            color: #0066FF;
+            margin-bottom: 2rem;
+            text-align: center;
+            text-shadow: 0 0 10px #0066FF;
+        }
+
+        .hexagon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            justify-items: center;
+            margin: 2rem 0;
+        }
+
+        .neural-node {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .hexagon {
+            width: 150px;
+            height: 130px;
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 255, 255, 0.05) 100%);
+            border: 2px solid #0066FF;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .neural-node:hover .hexagon {
+            transform: scale(1.1);
+            border-color: #ffffff;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(0, 102, 255, 0.1) 100%);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .hexagon-content {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .node-icon {
+            font-size: 2rem;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .node-title {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 0.5rem;
+        }
+
+        .node-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.2rem;
+            justify-content: center;
+        }
+
+        .feature-tag {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #0066FF;
+            padding: 0.1rem 0.3rem;
+            border-radius: 8px;
+            font-size: 0.6rem;
+            color: #0066FF;
+        }
+
+        /* Neural Connections */
+        .neural-connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line {
+            stroke: #0066FF;
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            animation: dataFlow 3s linear infinite;
+            opacity: 0.6;
+        }
+
+        /* Terminal Interface */
+        .neural-terminal {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #0066FF;
+            border-radius: 10px;
+            margin: 2rem 0;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 102, 255, 0.2);
+        }
+
+        .terminal-header {
+            background: linear-gradient(90deg, #0066FF, #003399);
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #FF0000; }
+        .dot-yellow { background: #FFFF00; }
+        .dot-green { background: #00FF00; }
+
+        .terminal-title {
+            font-family: 'Open Sans', sans-serif;
+            color: #FFFFFF;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+        }
+
+        .terminal-body {
+            padding: 1rem;
+            height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .terminal-line {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            animation: typewriter 0.5s ease-in;
+        }
+
+        .terminal-prompt {
+            color: #ffffff;
+        }
+
+        .terminal-output {
+            color: #0066FF;
+        }
+
+        .terminal-cursor {
+            background: #0066FF;
+            animation: blink 1s infinite;
+        }
+
+        /* System Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0066FF;
+            border-radius: 10px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: #0066FF;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            margin-bottom: 1rem;
+        }
+
+        .metric-icon {
+            font-size: 1.5rem;
+            color: #0066FF;
+            margin-right: 1rem;
+        }
+
+        .metric-value {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 0 10px #0066FF;
+            animation: counterUp 2s ease-out;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #0066FF;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-trend {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.8rem;
+            color: #00FF00;
+        }
+
+        /* Neural Launch Buttons */
+        .neural-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .neural-button {
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 255, 255, 0.05) 100%);
+            border: 2px solid #0066FF;
+            border-radius: 10px;
+            padding: 1.5rem;
+            color: #FFFFFF;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .neural-button:hover {
+            border-color: #0066FF;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(0, 102, 255, 0.1) 100%);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .button-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .button-icon {
+            font-size: 2rem;
+            color: #0066FF;
+        }
+
+        .button-text h3 {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #0066FF;
+        }
+
+        .button-text p {
+            font-size: 0.9rem;
+            color: #0066FF;
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        @keyframes textGlow {
+            0% { text-shadow: 0 0 10px #0066FF; }
+            100% { text-shadow: 0 0 20px #0066FF, 0 0 30px #0066FF; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes dataFlow {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: 20; }
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100vh); }
+        }
+
+        @keyframes typewriter {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes counterUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .neural-header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .neural-status {
+                gap: 1rem;
+            }
+            
+            .hexagon-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 2rem;
+            }
+            
+            .hexagon {
+                width: 120px;
+                height: 104px;
+            }
+            
+            .neural-container {
+                padding: 1rem;
+            }
+        }
+
+        /* Glitch Effects */
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch::before {
+            animation: glitch1 2s infinite;
+            color: #FF0000;
+            z-index: -1;
+        }
+
+        .glitch::after {
+            animation: glitch2 2s infinite;
+            color: #0066FF;
+            z-index: -2;
+        }
+
+        @keyframes glitch1 {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+        }
+
+        @keyframes glitch2 {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(2px, -2px); }
+            40% { transform: translate(2px, 2px); }
+            60% { transform: translate(-2px, -2px); }
+            80% { transform: translate(-2px, 2px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="matrix-bg"></div>
+    <div class="grid-overlay"></div>
+    <div class="scan-line"></div>
+
+    <!-- Neural Header -->
+    <header class="neural-header">
+        <div class="neural-logo">
+            <div class="logo-icon">
+                <i class="fas fa-eye"></i>
+            </div>
+            <div>
+                <div class="logo-text glitch" data-text="OptiView">OptiView</div>
+                <div class="logo-subtitle">NEURAL VISION INTERFACE</div>
+            </div>
+        </div>
+        
+        <div class="neural-status">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>NEURAL ONLINE</span>
+            </div>
+            <div class="status-indicator">
+                <i class="fas fa-microchip"></i>
+                <span id="neural-load">67%</span>
+            </div>
+            <div class="status-indicator">
+                <i class="fas fa-terminal"></i>
+                <span>CONSOLE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Neural Container -->
+    <div class="neural-container">
+        <!-- Neural Network Visualization -->
+        <div class="neural-network">
+            <h2 class="network-title">NEURAL NETWORK TOPOLOGY</h2>
+            
+            <!-- Hexagonal Nodes -->
+            <div class="hexagon-grid">
+                <div class="neural-node" onclick="launchNeural('blur')">
+                    <div class="hexagon">
+                        <div class="hexagon-content">
+                            <i class="fas fa-shield-alt node-icon"></i>
+                            <div class="node-title">PRIVACY SHIELD</div>
+                            <div class="node-features">
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="neural-node" onclick="launchNeural('detect')">
+                    <div class="hexagon">
+                        <div class="hexagon-content">
+                            <i class="fas fa-search node-icon"></i>
+                            <div class="node-title">OBJECT DETECT</div>
+                            <div class="node-features">
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="neural-node" onclick="launchNeural('ocr')">
+                    <div class="hexagon">
+                        <div class="hexagon-content">
+                            <i class="fas fa-file-text node-icon"></i>
+                            <div class="node-title">OCR ENGINE</div>
+                            <div class="node-features">
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="neural-node" onclick="launchNeural('leak')">
+                    <div class="hexagon">
+                        <div class="hexagon-content">
+                            <i class="fas fa-tint node-icon"></i>
+                            <div class="node-title">LEAK MONITOR</div>
+                            <div class="node-features">
+                               
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Neural Connections SVG -->
+            <svg class="neural-connections">
+                <line class="connection-line" x1="25%" y1="50%" x2="50%" y2="30%" />
+                <line class="connection-line" x1="50%" y1="30%" x2="75%" y2="50%" />
+                <line class="connection-line" x1="25%" y1="50%" x2="50%" y2="70%" />
+                <line class="connection-line" x1="75%" y1="50%" x2="50%" y2="70%" />
+                <line class="connection-line" x1="25%" y1="50%" x2="75%" y2="50%" />
+            </svg>
+        </div>
+
+        <!-- Neural Terminal -->
+        <div class="neural-terminal">
+            <div class="terminal-header">
+                <div class="terminal-dots">
+                    <div class="terminal-dot dot-red"></div>
+                    <div class="terminal-dot dot-yellow"></div>
+                    <div class="terminal-dot dot-green"></div>
+                </div>
+                <div class="terminal-title">NEURAL COMMAND INTERFACE</div>
+            </div>
+            <div class="terminal-body" id="terminalBody">
+                <div class="terminal-line">
+                    <span class="terminal-prompt">OptiView:~$</span> 
+                    <span class="terminal-output">Neural Vision Interface v2.1.0 initialized</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-prompt">NEURAL:</span> 
+                    <span class="terminal-output">Loading AI models... [████████████] 100%</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-prompt">STATUS:</span> 
+                    <span class="terminal-output">4 neural networks online • Ready for operations</span>
+                </div>
+                <div class="terminal-line">
+                    <span class="terminal-prompt">GPU:</span> 
+                    <span class="terminal-output">CUDA cores active • Memory: 8.2GB/12GB</span>
+                </div>
+                <div class="terminal-line" id="currentCommand">
+                    <span class="terminal-prompt">OptiView:~$</span> 
+                    <span id="typingText"></span>
+                    <span class="terminal-cursor">█</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-brain metric-icon"></i>
+                    <div class="metric-trend">+12%</div>
+                </div>
+                <div class="metric-value" id="neuralPathways">1,847</div>
+                <div class="metric-label">Neural Pathways</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-microchip metric-icon"></i>
+                    <div class="metric-trend">100%</div>
+                </div>
+                <div class="metric-value">8</div>
+                <div class="metric-label">Processing Units</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-tachometer-alt metric-icon"></i>
+                    <div class="metric-trend" id="systemLoadTrend">-3%</div>
+                </div>
+                <div class="metric-value" id="systemLoad">67%</div>
+                <div class="metric-label">System Load</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <i class="fas fa-clock metric-icon"></i>
+                    <div class="metric-trend">-8%</div>
+                </div>
+                <div class="metric-value" id="responseTime">1.2s</div>
+                <div class="metric-label">Response Time</div>
+            </div>
+        </div>
+
+        <!-- Neural Launch Controls -->
+        <div class="neural-controls">
+            <a href="/neural-blur" class="neural-button">
+                <div class="button-content">
+                    <i class="fas fa-shield-alt button-icon"></i>
+                    <div class="button-text">
+                        <h3>PRIVACY SHIELD</h3>
+                        <p>Advanced blur detection with real-time face & object masking</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/neural-detect" class="neural-button">
+                <div class="button-content">
+                    <i class="fas fa-search button-icon"></i>
+                    <div class="button-text">
+                        <h3>OBJECT RECOGNITION</h3>
+                        <p>YOLO-based detection with 80+ class neural classification</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/neural-ocr" class="neural-button">
+                <div class="button-content">
+                    <i class="fas fa-file-text button-icon"></i>
+                    <div class="button-text">
+                        <h3>OCR ENGINE</h3>
+                        <p>Multi-language text extraction with AI handwriting recognition</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/neural-leak" class="neural-button">
+                <div class="button-content">
+                    <i class="fas fa-tint button-icon"></i>
+                    <div class="button-text">
+                        <h3>LEAK MONITOR</h3>
+                        <p>Infrastructure monitoring with predictive leak analysis</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Terminal typing animation
+        const commands = [
+            "status --neural-network",
+            "monitor --system-load",
+            "scan --active-processes",
+            "analyze --performance-metrics"
+        ];
+        
+        let commandIndex = 0;
+        let charIndex = 0;
+        const typingSpeed = 100;
+        const erasingSpeed = 50;
+        const delayBetweenCommands = 2000;
+
+        function typeCommand() {
+            const currentCommand = commands[commandIndex];
+            const typingElement = document.getElementById('typingText');
+            
+            if (charIndex < currentCommand.length) {
+                typingElement.textContent += currentCommand.charAt(charIndex);
+                charIndex++;
+                setTimeout(typeCommand, typingSpeed);
+            } else {
+                setTimeout(eraseCommand, delayBetweenCommands);
+            }
+        }
+
+        function eraseCommand() {
+            const typingElement = document.getElementById('typingText');
+            
+            if (charIndex > 0) {
+                typingElement.textContent = typingElement.textContent.slice(0, -1);
+                charIndex--;
+                setTimeout(eraseCommand, erasingSpeed);
+            } else {
+                commandIndex = (commandIndex + 1) % commands.length;
+                setTimeout(typeCommand, 500);
+            }
+        }
+
+        // Start typing animation
+        setTimeout(typeCommand, 1000);
+
+        // Real-time metrics updates
+        function updateMetrics() {
+            // Update neural pathways
+            const pathways = document.getElementById('neuralPathways');
+            let currentPathways = parseInt(pathways.textContent.replace(',', ''));
+            pathways.textContent = (currentPathways + Math.floor(Math.random() * 3)).toLocaleString();
+
+            // Update system load
+            const systemLoad = document.getElementById('systemLoad');
+            const loadValue = Math.floor(Math.random() * 20) + 60;
+            systemLoad.textContent = loadValue + '%';
+
+            // Update neural load in header
+            const neuralLoad = document.getElementById('neural-load');
+            neuralLoad.textContent = Math.floor(Math.random() * 20) + 60 + '%';
+
+            // Update response time
+            const responseTime = document.getElementById('responseTime');
+            responseTime.textContent = (Math.random() * 2 + 0.8).toFixed(1) + 's';
+        }
+
+        // Launch neural modules
+        function launchNeural(module) {
+            // Add glitch effect
+            const node = event.currentTarget;
+            node.style.filter = 'hue-rotate(180deg)';
+            
+            setTimeout(() => {
+                node.style.filter = 'none';
+                window.location.href = `/neural-${module}`;
+            }, 200);
+        }
+
+        // Add terminal command on click
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.neural-node')) {
+                const module = e.target.closest('.neural-node').querySelector('.node-title').textContent;
+                addTerminalLine(`LAUNCHING: ${module} neural module...`);
+            }
+        });
+
+        function addTerminalLine(text) {
+            const terminalBody = document.getElementById('terminalBody');
+            const newLine = document.createElement('div');
+            newLine.className = 'terminal-line';
+            newLine.innerHTML = `<span class="terminal-prompt">NEURAL:</span> <span class="terminal-output">${text}</span>`;
+            
+            // Insert before the current command line
+            const currentCommand = document.getElementById('currentCommand');
+            terminalBody.insertBefore(newLine, currentCommand);
+            
+            // Scroll to bottom
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateMetrics();
+            setInterval(updateMetrics, 3000);
+            
+            // Add some startup messages
+            setTimeout(() => addTerminalLine('All neural networks synchronized'), 2000);
+            setTimeout(() => addTerminalLine('Ready for computer vision operations'), 3000);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        window.location.href = '/neural-blur';
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        window.location.href = '/neural-detect';
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        window.location.href = '/neural-ocr';
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        window.location.href = '/neural-leak';
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Leakage Detection - OptiView</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #96ceb4 0%, #2c3e50 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title h1 {
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .page-title p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .upload-section, .results-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: white;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .monitoring-options {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-title {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .monitoring-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .mode-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .mode-option.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #96ceb4;
+        }
+
+        .mode-option:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .mode-icon {
+            font-size: 1.5rem;
+            color: #96ceb4;
+            margin-bottom: 0.5rem;
+        }
+
+        .mode-title {
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .sensitivity-control {
+            margin-top: 1rem;
+        }
+
+        .control-label {
+            color: white;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .sensitivity-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .sensitivity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+        }
+
+        .sensitivity-value {
+            color: white;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .process-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #fff, #f8f9fa);
+            color: #96ceb4;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .process-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .live-feed {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .feed-placeholder {
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+        }
+
+        .feed-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .feed-video {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .leak-alert {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #ff6b6b;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-weight: 600;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+
+        .leak-alert.active {
+            display: block;
+        }
+
+        .detection-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn.active {
+            background: #96ceb4;
+        }
+
+        .alert-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .alert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .alert-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border-left: 4px solid #96ceb4;
+        }
+
+        .alert-card.warning {
+            border-left-color: #ffa500;
+        }
+
+        .alert-card.critical {
+            border-left-color: #ff6b6b;
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert-icon {
+            font-size: 1.2rem;
+        }
+
+        .alert-icon.info { color: #96ceb4; }
+        .alert-icon.warning { color: #ffa500; }
+        .alert-icon.critical { color: #ff6b6b; }
+
+        .alert-title {
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .alert-time {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            margin-left: auto;
+        }
+
+        .alert-description {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .alert-location {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon.active { color: #4fd1c7; }
+        .stat-icon.detected { color: #ffa500; }
+        .stat-icon.critical { color: #ff6b6b; }
+        .stat-icon.uptime { color: #96ceb4; }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .page-title h1 {
+                font-size: 2rem;
+            }
+            
+            .monitoring-modes {
+                grid-template-columns: 1fr;
+            }
+            
+            .detection-controls {
+                flex-direction: column;
+            }
+            
+            .alert-grid, .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <i class="fas fa-eye"></i>
+                OptiView
+            </a>
+            <a href="/" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="page-title">
+            <h1>
+                <i class="fas fa-tint"></i>
+                Water Leakage Detection
+            </h1>
+            <p>Real-time monitoring and detection of water leaks in infrastructure using advanced computer vision and machine learning.</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <h2 class="section-title">
+                    <i class="fas fa-video"></i>
+                    Setup Monitoring
+                </h2>
+                
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <div class="upload-text">Upload video or connect camera</div>
+                    <div class="upload-subtext">Supports MP4, AVI, Live Camera Feed</div>
+                </div>
+                
+                <input type="file" id="fileInput" class="file-input" accept="video/*">
+                
+                <div class="monitoring-options">
+                    <div class="option-title">
+                        <i class="fas fa-cog"></i>
+                        Monitoring Mode
+                    </div>
+                    <div class="monitoring-modes">
+                        <div class="mode-option active" data-mode="realtime">
+                            <i class="fas fa-video mode-icon"></i>
+                            <div class="mode-title">Real-time</div>
+                        </div>
+                        <div class="mode-option" data-mode="batch">
+                            <i class="fas fa-file-video mode-icon"></i>
+                            <div class="mode-title">Batch Analysis</div>
+                        </div>
+                    </div>
+                    
+                    <div class="sensitivity-control">
+                        <label class="control-label">
+                            Detection Sensitivity
+                            <span class="sensitivity-value" id="sensitivityValue">75%</span>
+                        </label>
+                        <input type="range" class="sensitivity-slider" id="sensitivitySlider" min="25" max="100" value="75">
+                    </div>
+                </div>
+                
+                <button class="process-btn" id="startBtn" disabled>
+                    <i class="fas fa-play"></i>
+                    Start Monitoring
+                </button>
+            </div>
+
+            <div class="results-section">
+                <h2 class="section-title">
+                    <i class="fas fa-desktop"></i>
+                    Live Feed
+                </h2>
+                
+                <div class="live-feed" id="liveFeed">
+                    <div class="leak-alert" id="leakAlert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        LEAK DETECTED!
+                    </div>
+                    <div class="feed-placeholder">
+                        <i class="fas fa-video"></i>
+                        <p>Live monitoring feed will appear here</p>
+                    </div>
+                </div>
+                
+                <div class="detection-controls" id="detectionControls" style="display: none;">
+                    <button class="control-btn" id="pauseBtn">
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button class="control-btn" id="resumeBtn" style="display: none;">
+                        <i class="fas fa-play"></i> Resume
+                    </button>
+                    <button class="control-btn" id="stopBtn">
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                    <button class="control-btn" id="recordBtn">
+                        <i class="fas fa-record-vinyl"></i> Record
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <h2 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                Monitoring Statistics
+            </h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-eye stat-icon active"></i>
+                    <span class="stat-number" id="activeMonitors">0</span>
+                    <div class="stat-label">Active Monitors</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exclamation-triangle stat-icon detected"></i>
+                    <span class="stat-number" id="leaksDetected">0</span>
+                    <div class="stat-label">Leaks Detected</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-clock stat-icon uptime"></i>
+                    <span class="stat-number" id="uptime">00:00</span>
+                    <div class="stat-label">Uptime</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-thermometer-half stat-icon critical"></i>
+                    <span class="stat-number" id="avgResponse">2.3s</span>
+                    <div class="stat-label">Avg Response</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert-panel">
+            <h2 class="section-title">
+                <i class="fas fa-bell"></i>
+                Recent Alerts
+            </h2>
+            <div class="alert-grid" id="alertGrid">
+                <div class="alert-card">
+                    <div class="alert-header">
+                        <i class="fas fa-info-circle alert-icon info"></i>
+                        <span class="alert-title">System Online</span>
+                        <span class="alert-time">Just now</span>
+                    </div>
+                    <div class="alert-description">
+                        Water leakage detection system is running and monitoring for anomalies.
+                    </div>
+                    <div class="alert-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        System Status
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let monitoringActive = false;
+        let currentMode = 'realtime';
+        let leakCount = 0;
+        let startTime = null;
+        let uptimeInterval = null;
+
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.querySelector('.upload-area');
+        const startBtn = document.getElementById('startBtn');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        const liveFeed = document.getElementById('liveFeed');
+        const detectionControls = document.getElementById('detectionControls');
+        const leakAlert = document.getElementById('leakAlert');
+        const alertGrid = document.getElementById('alertGrid');
+
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        sensitivitySlider.addEventListener('input', updateSensitivity);
+        startBtn.addEventListener('click', toggleMonitoring);
+
+        // Mode selection
+        document.querySelectorAll('.mode-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
+                this.classList.add('active');
+                currentMode = this.dataset.mode;
+            });
+        });
+
+        // Drag and drop handlers
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+
+        // Control buttons
+        document.getElementById('pauseBtn').addEventListener('click', pauseMonitoring);
+        document.getElementById('resumeBtn').addEventListener('click', resumeMonitoring);
+        document.getElementById('stopBtn').addEventListener('click', stopMonitoring);
+        document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                updateUploadArea(file);
+                startBtn.disabled = false;
+            }
+        }
+
+        function updateUploadArea(file) {
+            const icon = uploadArea.querySelector('.upload-icon');
+            const text = uploadArea.querySelector('.upload-text');
+            const subtext = uploadArea.querySelector('.upload-subtext');
+            
+            icon.className = 'fas fa-video upload-icon';
+            text.textContent = file.name;
+            subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB - Ready for monitoring`;
+        }
+
+        function updateSensitivity() {
+            sensitivityValue.textContent = sensitivitySlider.value + '%';
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave() {
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                fileInput.files = files;
+                updateUploadArea(files[0]);
+                startBtn.disabled = false;
+            }
+        }
+
+        async function toggleMonitoring() {
+            if (!monitoringActive) {
+                await startMonitoring();
+            } else {
+                stopMonitoring();
+            }
+        }
+
+        async function startMonitoring() {
+            if (!selectedFile && currentMode === 'batch') {
+                alert('Please select a video file first');
+                return;
+            }
+
+            monitoringActive = true;
+            startBtn.innerHTML = '<div class="spinner"></div> Starting...';
+            startBtn.disabled = true;
+
+            try {
+                // Upload file if in batch mode
+                if (selectedFile && currentMode === 'batch') {
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+                    formData.append('sensitivity', sensitivitySlider.value);
+                    formData.append('mode', currentMode);
+
+                    const response = await fetch('/api/water_leakage/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (result.error) {
+                        throw new Error(result.error);
+                    }
+                }
+
+                // Start monitoring interface
+                startTime = new Date();
+                updateActiveMonitors(1);
+                startUptime();
+                
+                // Show live feed
+                showLiveFeed();
+                
+                // Show controls
+                detectionControls.style.display = 'flex';
+                startBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Monitoring';
+                startBtn.disabled = false;
+
+                // Start simulated leak detection
+                startLeakSimulation();
+
+                addAlert('info', 'Monitoring Started', 'Water leakage detection is now active and monitoring for anomalies.');
+
+            } catch (error) {
+                console.error('Monitoring error:', error);
+                monitoringActive = false;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start Monitoring';
+                startBtn.disabled = false;
+                addAlert('critical', 'Monitoring Failed', error.message);
+            }
+        }
+
+        function pauseMonitoring() {
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('resumeBtn').style.display = 'block';
+            addAlert('warning', 'Monitoring Paused', 'Detection has been temporarily paused.');
+        }
+
+        function resumeMonitoring() {
+            document.getElementById('pauseBtn').style.display = 'block';
+            document.getElementById('resumeBtn').style.display = 'none';
+            addAlert('info', 'Monitoring Resumed', 'Detection has been resumed.');
+        }
+
+        function stopMonitoring() {
+            monitoringActive = false;
+            clearInterval(uptimeInterval);
+            
+            // Reset UI
+            liveFeed.innerHTML = `
+                <div class="feed-placeholder">
+                    <i class="fas fa-video"></i>
+                    <p>Live monitoring feed will appear here</p>
+                </div>
+            `;
+            
+            detectionControls.style.display = 'none';
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Start Monitoring';
+            startBtn.disabled = selectedFile ? false : true;
+            
+            updateActiveMonitors(0);
+            addAlert('info', 'Monitoring Stopped', 'Water leakage detection has been stopped.');
+        }
+
+        function toggleRecording() {
+            const recordBtn = document.getElementById('recordBtn');
+            const isRecording = recordBtn.classList.contains('active');
+            
+            if (isRecording) {
+                recordBtn.classList.remove('active');
+                recordBtn.innerHTML = '<i class="fas fa-record-vinyl"></i> Record';
+                addAlert('info', 'Recording Stopped', 'Video recording has been stopped.');
+            } else {
+                recordBtn.classList.add('active');
+                recordBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Recording';
+                addAlert('info', 'Recording Started', 'Video recording has been started.');
+            }
+        }
+
+        function showLiveFeed() {
+            // Simulate live feed with a placeholder image or video
+            liveFeed.innerHTML = `
+                <div class="leak-alert" id="leakAlert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    LEAK DETECTED!
+                </div>
+                <video class="feed-video" autoplay muted loop>
+                    <source src="data:video/mp4;base64," type="video/mp4">
+                    <div style="width: 100%; height: 300px; background: linear-gradient(45deg, #333, #666); display: flex; align-items: center; justify-content: center; color: white; border-radius: 10px;">
+                        <div style="text-align: center;">
+                            <i class="fas fa-video" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <div>Live Feed Active</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.5rem;">Monitoring for water leaks...</div>
+                        </div>
+                    </div>
+                </video>
+                <div style="margin-top: 1rem; color: rgba(255,255,255,0.8); text-align: center;">
+                    <i class="fas fa-circle" style="color: #4fd1c7; animation: pulse 2s infinite;"></i>
+                    Monitoring Active - Sensitivity: ${sensitivitySlider.value}%
+                </div>
+            `;
+        }
+
+        function startLeakSimulation() {
+            // Simulate occasional leak detections
+            const simulateLeaks = () => {
+                if (monitoringActive && Math.random() < 0.1) { // 10% chance every 5 seconds
+                    detectLeak();
+                }
+                
+                if (monitoringActive) {
+                    setTimeout(simulateLeaks, 5000);
+                }
+            };
+            
+            setTimeout(simulateLeaks, 10000); // Start after 10 seconds
+        }
+
+        function detectLeak() {
+            leakCount++;
+            updateLeaksDetected(leakCount);
+            
+            // Show leak alert
+            const alert = document.getElementById('leakAlert');
+            if (alert) {
+                alert.classList.add('active');
+                setTimeout(() => {
+                    alert.classList.remove('active');
+                }, 3000);
+            }
+            
+            // Add alert to panel
+            addAlert('critical', 'Water Leak Detected', `Potential leak detected in monitoring area. Confidence: ${Math.floor(Math.random() * 20) + 80}%`, 'Sector B - Level 2');
+        }
+
+        function startUptime() {
+            uptimeInterval = setInterval(() => {
+                if (startTime) {
+                    const now = new Date();
+                    const diff = now - startTime;
+                    const hours = Math.floor(diff / 3600000);
+                    const minutes = Math.floor((diff % 3600000) / 60000);
+                    const seconds = Math.floor((diff % 60000) / 1000);
+                    
+                    document.getElementById('uptime').textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function updateActiveMonitors(count) {
+            document.getElementById('activeMonitors').textContent = count;
+        }
+
+        function updateLeaksDetected(count) {
+            document.getElementById('leaksDetected').textContent = count;
+        }
+
+        function addAlert(type, title, description, location = null) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            
+            const alertCard = document.createElement('div');
+            alertCard.className = `alert-card ${type}`;
+            alertCard.innerHTML = `
+                <div class="alert-header">
+                    <i class="fas ${getAlertIcon(type)} alert-icon ${type}"></i>
+                    <span class="alert-title">${title}</span>
+                    <span class="alert-time">${timeString}</span>
+                </div>
+                <div class="alert-description">${description}</div>
+                ${location ? `<div class="alert-location"><i class="fas fa-map-marker-alt"></i>${location}</div>` : ''}
+            `;
+            
+            // Add to top of alert grid
+            alertGrid.insertBefore(alertCard, alertGrid.firstChild);
+            
+            // Remove old alerts (keep only last 10)
+            while (alertGrid.children.length > 10) {
+                alertGrid.removeChild(alertGrid.lastChild);
+            }
+        }
+
+        function getAlertIcon(type) {
+            switch (type) {
+                case 'info': return 'fa-info-circle';
+                case 'warning': return 'fa-exclamation-triangle';
+                case 'critical': return 'fa-exclamation-circle';
+                default: return 'fa-info-circle';
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Enable camera access for real-time mode
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                startBtn.disabled = false; // Enable for camera access
+            }
+        });
+    </script>
+</body>
+</html>

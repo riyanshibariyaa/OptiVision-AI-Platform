@@ -22,3 +22,10 @@ flask-cors
 imread-from-url
 onnxruntime-gpu
 cap-from-youtube
+
+
+torchvision
+
+
+python-docx
+pdf2image

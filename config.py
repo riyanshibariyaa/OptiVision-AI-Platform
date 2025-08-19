@@ -18,7 +18,9 @@ class Config:
     MODEL_FOLDER = os.path.join(STORAGE_DIR, 'models')
     
     # Allowed file extensions
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    
+    ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi', 'mov', 'mkv', 'docx', 'doc'}
+    MAX_CONTENT_LENGTH = 200 * 1024 * 1024  # 200MB max file size
     
     # Model settings
     MODEL_CONFIDENCE_THRESHOLD = 0.4
