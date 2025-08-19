@@ -723,7 +723,7 @@ if __name__ == '__main__':
     
     # IMPORTANT: Disable auto-reload to fix Windows socket issues
     print("🚀 Starting Neural Vision Server...")
-    print("🌐 Access the application at: http://127.0.0.1:5000/neural-blur")
+    print("🌐 Access the application at: http://127.0.0.1:5000/")
     print("⚠️  Auto-reload disabled to prevent Windows socket issues")
     
     app.run(

@@ -1318,39 +1318,299 @@
 
     // Also add this improved stop monitoring function that resets detection
     async function stopMonitoring() {
-        try {
-            // Stop monitoring
-            const response = await fetch('/api/neural/leak/stop', {
-                method: 'POST'
-            });
-            
-            // Reset detection when stopping
-            await resetDetection();
-            
+    console.log('🛑 Stopping monitoring...');
+    
+    try {
+        // Call the stop endpoint
+        const response = await fetch('/api/neural/leak/stop', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        console.log('Stop response:', result);
+        
+        if (response.ok) {
+            // Update global state
             monitoringActive = false;
-            clearInterval(uptimeInterval);
             
-            // Reset UI
-            liveFeed.innerHTML = `
-                <div class="feed-placeholder">
-                    <i class="fas fa-video" style="color: #0066FF;"></i>
-                    <p style="color: #0066FF;">NEURAL MONITORING STANDBY</p>
-                    <p style="color: #0066FF;">Ready for next video source...</p>
-                </div>
-            `;
+            // Clear intervals
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+                uptimeInterval = null;
+            }
             
-            detectionControls.style.display = 'none';
-            startBtn.innerHTML = '<i class="fas fa-play"></i> START MONITORING';
-            startBtn.disabled = selectedFile ? false : true;
+            if (statsUpdateInterval) {
+                clearInterval(statsUpdateInterval);
+                statsUpdateInterval = null;
+            }
             
-            updateActiveMonitors(0);
-            addAlert('info', 'MONITORING STOPPED', 'Neural leak detection terminated and reset for next video.');
+            // Reset UI elements
+            resetUIAfterStop();
             
-        } catch (error) {
-            console.error('Error stopping monitoring:', error);
-            addAlert('error', 'STOP FAILED', 'Failed to stop monitoring properly');
+            addAlert('info', 'MONITORING STOPPED', 'Neural leak detection has been terminated.');
+            console.log('✅ Monitoring stopped successfully');
+            
+        } else {
+            throw new Error(result.message || 'Failed to stop monitoring');
         }
+        
+    } catch (error) {
+        console.error('❌ Error stopping monitoring:', error);
+        addAlert('error', 'STOP FAILED', error.message);
+        
+        // Force UI reset even if API call failed
+        resetUIAfterStop();
     }
+}
+
+function resetUIAfterStop() {
+    // Reset live feed
+    if (liveFeed) {
+        liveFeed.innerHTML = `
+            <div class="feed-placeholder">
+                <i class="fas fa-video" style="color: #0066FF;"></i>
+                <p style="color: #0066FF;">NEURAL MONITORING STANDBY</p>
+                <p style="color: #0066FF;">Ready for next video source...</p>
+            </div>
+        `;
+    }
+    
+    // Hide detection controls
+    if (detectionControls) {
+        detectionControls.style.display = 'none';
+    }
+    
+    // Reset start button
+    if (startBtn) {
+        startBtn.innerHTML = '<i class="fas fa-play"></i> START MONITORING';
+        startBtn.disabled = selectedFile ? false : true;
+    }
+    
+    // Reset statistics
+    updateActiveMonitors(0);
+    updateSystemUptime('00:00:00');
+    
+    console.log('🔄 UI reset completed');
+}
+
+// Improved statistics updates with real API calls
+function startStatsUpdates() {
+    // Clear any existing interval
+    if (statsUpdateInterval) {
+        clearInterval(statsUpdateInterval);
+    }
+    
+    // Update stats every 2 seconds
+    statsUpdateInterval = setInterval(async () => {
+        if (!monitoringActive) {
+            clearInterval(statsUpdateInterval);
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/neural/leak/stats');
+            if (response.ok) {
+                const stats = await response.json();
+                
+                // Update UI with real stats
+                updateActiveMonitors(stats.active_monitors);
+                updateLeaksDetected(stats.leaks_detected);
+                updateSystemUptime(stats.uptime);
+                updateAvgResponse(stats.avg_response_time);
+                
+                // Update frame count if available
+                if (stats.frame_count) {
+                    updateFrameCount(stats.frame_count);
+                }
+                
+            }
+        } catch (error) {
+            console.error('Error updating stats:', error);
+        }
+    }, 2000);
+}
+
+function updateFrameCount(count) {
+    // Add frame count display if it doesn't exist
+    let frameElement = document.querySelector('[data-stat="frame-count"]');
+    if (!frameElement) {
+        // You can add this element to your HTML or create it dynamically
+        console.log(`Frame count: ${count}`);
+    } else {
+        frameElement.textContent = count;
+    }
+}
+
+// Enhanced start monitoring function
+async function startMonitoring() {
+    if (!selectedFile) {
+        addAlert('error', 'NO SOURCE', 'Please select a video file for monitoring.');
+        return;
+    }
+    
+    console.log('🚀 Starting monitoring with file:', selectedFile.name);
+    
+    try {
+        // Show loading state
+        startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING...';
+        startBtn.disabled = true;
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('sensitivity', sensitivitySlider.value);
+        
+        console.log('📤 Uploading file...');
+        
+        // Upload file and start monitoring
+        const response = await fetch('/api/neural/leak/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('📥 Response status:', response.status);
+        
+        const result = await response.json();
+        console.log('📥 Response data:', result);
+        
+        if (response.ok && result.status === 'NEURAL_MONITORING') {
+            // Monitoring started successfully
+            monitoringActive = true;
+            updateUIForActiveMonitoring();
+            startVideoStream();
+            startStatsUpdates(); // Start real statistics updates
+            addAlert('success', 'MONITORING ACTIVE', result.message);
+            console.log('✅ Monitoring started successfully');
+            
+        } else {
+            throw new Error(result.message || 'Failed to start monitoring');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error starting monitoring:', error);
+        addAlert('error', 'MONITORING FAILED', error.message);
+        
+        // Reset UI
+        startBtn.innerHTML = '<i class="fas fa-play"></i> START MONITORING';
+        startBtn.disabled = false;
+    }
+}
+
+// Add these missing utility functions if they don't exist
+function updateActiveMonitors(count) {
+    const element = document.querySelector('[data-stat="active-monitors"]') || 
+                   document.getElementById('activeMonitors');
+    if (element) element.textContent = count;
+}
+
+function updateLeaksDetected(count) {
+    const element = document.querySelector('[data-stat="leaks-detected"]') || 
+                   document.getElementById('leaksDetected');
+    if (element) element.textContent = count;
+    leakCount = count;
+}
+
+function updateSystemUptime(uptime) {
+    const element = document.querySelector('[data-stat="system-uptime"]') || 
+                   document.getElementById('systemUptime');
+    if (element) element.textContent = uptime;
+}
+
+function updateAvgResponse(response) {
+    const element = document.querySelector('[data-stat="avg-response"]') || 
+                   document.getElementById('avgResponse');
+    if (element) element.textContent = response;
+}
+
+// Enhanced sensitivity update with immediate effect
+async function updateDetectionSensitivity() {
+    if (!monitoringActive) return;
+    
+    try {
+        const response = await fetch('/api/neural/leak/sensitivity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                sensitivity: parseInt(sensitivitySlider.value)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            addAlert('info', 'SENSITIVITY UPDATED', result.message);
+            console.log('✅ Sensitivity updated to', sensitivitySlider.value + '%');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error updating sensitivity:', error);
+    }
+}
+
+// Enhanced reset function
+async function resetDetection() {
+    try {
+        console.log('🔄 Resetting detection history...');
+        
+        const response = await fetch('/api/neural/leak/reset', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            addAlert('info', 'DETECTION RESET', 'Detection history and leak count have been reset.');
+            
+            // Reset UI leak count immediately
+            updateLeaksDetected(0);
+            
+            console.log('✅ Detection reset successful');
+        } else {
+            throw new Error(result.message || 'Reset failed');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error resetting detection:', error);
+        addAlert('error', 'RESET FAILED', error.message);
+    }
+}
+
+// Make sure these event listeners are properly attached
+document.addEventListener('DOMContentLoaded', function() {
+    // Reattach event listeners for buttons that might not be working
+    const terminateBtn = document.getElementById('terminateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    
+    if (terminateBtn) {
+        terminateBtn.addEventListener('click', stopMonitoring);
+        console.log('✅ Terminate button event listener attached');
+    }
+    
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetDetection);
+        console.log('✅ Reset button event listener attached');
+    }
+    
+    // Also attach to buttons that might be created dynamically
+    document.addEventListener('click', function(event) {
+        if (event.target.id === 'terminateBtn' || event.target.closest('#terminateBtn')) {
+            stopMonitoring();
+        }
+        if (event.target.id === 'resetBtn' || event.target.closest('#resetBtn')) {
+            resetDetection();
+        }
+    });
+});
+
+console.log('🔧 Enhanced monitoring controls loaded');
 
     // Additional stub functions to prevent errors
     function pauseMonitoring() { console.log('Pause monitoring'); }
