@@ -288,6 +288,12 @@
             border-color: #4fd1c7;
             box-shadow: 0 0 25px rgba(79, 209, 199, 0.5);
         }
+        .input-node {
+            margin: 0.3rem 0;          /* Add vertical margin to each output node */
+        }
+        .input-node .node-label {
+            font-size: 0.8rem;       /* Increased from 0.7rem */
+        }
 
         /* Processing Nodes */
         .processing-node {
@@ -310,11 +316,18 @@
             border-color: #FFFFFF;
             background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, rgba(0, 102, 255, 0.05) 100%);
         }
+        .output-node {
+            margin: 0.5rem 0;          /* Add vertical margin to each output node */
+        }
 
         .output-node:hover .node-core {
             border-color: #FFFFFF;
             box-shadow: 0 0 35px rgba(0, 255, 255, 0.7);
         }
+        .output-node .node-label {
+            font-size: 0.8rem;       /* Increased from 0.7rem */
+        }
+
 
         /* Neural Connections */
         .neural-connections {
