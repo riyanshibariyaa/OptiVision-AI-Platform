@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Shield - OptiView Neural Interface</title>
-    
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Open Sans:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Neural Privacy Shield - Face & Plate Blur</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         * {
@@ -16,27 +17,25 @@
         }
 
         body {
-            font-family: 'Rajdhani', sans-serif;
+            font-family: 'Open Sans', sans-serif;
             background: #000000;
-            color: #0066FF;
-            overflow-x: hidden;
+            color: #ffffff;
             min-height: 100vh;
             position: relative;
+            overflow-x: hidden;
         }
 
-        /* Cyberpunk Background Effects */
+        /* Background Effects */
         .matrix-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1;
-            pointer-events: none;
             background: 
-                radial-gradient(circle at 25% 25%, rgba(0, 100, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
-                linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+                radial-gradient(circle at 25% 25%, #001122 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, #000033 0%, transparent 50%);
+            z-index: -3;
         }
 
         .grid-overlay {
@@ -45,13 +44,11 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 2;
-            pointer-events: none;
             background-image: 
-                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+                linear-gradient(rgba(0, 102, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 102, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
-            animation: gridMove 20s linear infinite;
+            z-index: -2;
         }
 
         .scan-line {
@@ -61,22 +58,39 @@
             width: 100%;
             height: 2px;
             background: linear-gradient(90deg, transparent, #0066FF, transparent);
-            z-index: 10;
-            animation: scanLine 4s linear infinite;
+            animation: scanLine 3s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes scanLine {
+            0% { top: 0; opacity: 1; }
+            100% { top: 100vh; opacity: 0; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes neuralSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes energyFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
         }
 
         /* Neural Header */
         .neural-header {
-            position: relative;
-            z-index: 100;
-            background: rgba(0, 0, 0, 0.8);
-            border-bottom: 2px solid #0066FF;
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0, 102, 255, 0.3);
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #0066FF;
+            backdrop-filter: blur(10px);
         }
 
         .neural-logo {
@@ -86,64 +100,56 @@
         }
 
         .logo-icon {
-            width: 50px;
-            height: 50px;
-            border: 2px solid #0066FF;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #0066FF, #00AAFF);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
-            animation: pulse 2s infinite;
+            font-size: 1.5rem;
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
         }
 
         .logo-text {
             font-family: 'Open Sans', sans-serif;
             font-size: 1.8rem;
-            font-weight: 900;
-            color: #ffffff;
-            text-shadow: 0 0 10px #0066FF;
+            font-weight: 700;
+            color: #0066FF;
         }
 
         .logo-subtitle {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             color: #ffffff;
-            font-weight: 300;
-            letter-spacing: 2px;
+            opacity: 0.7;
         }
 
         .back-btn {
-            background: rgba(0, 102, 255, 0.1);
+            background: rgba(0, 255, 255, 0.1);
             border: 2px solid #0066FF;
             color: #0066FF;
-            padding: 0.8rem 1.5rem;
-            border-radius: 25px;
+            padding: 1rem 2rem;
+            border-radius: 10px;
             text-decoration: none;
             font-family: 'Open Sans', sans-serif;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
 
         .back-btn:hover {
             background: rgba(0, 255, 255, 0.2);
-            border-color: #0066FF;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-            transform: translateX(-5px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            color: #00AAFF;
         }
 
         /* Main Container */
         .neural-container {
-            position: relative;
-            z-index: 50;
-            padding: 2rem;
             max-width: 1400px;
             margin: 0 auto;
+            padding: 2rem;
         }
 
-        /* Privacy Shield Title */
         .shield-title {
             text-align: center;
             margin-bottom: 3rem;
@@ -152,10 +158,9 @@
         .shield-title h1 {
             font-family: 'Open Sans', sans-serif;
             font-size: 3rem;
-            color: #ffffff;
-            text-shadow: 0 0 20px #0066FF;
+            color: #0066FF;
             margin-bottom: 1rem;
-            animation: textGlow 3s ease-in-out infinite alternate;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
         }
 
         .shield-title p {
@@ -209,13 +214,13 @@
         }
 
         .neural-dropzone:hover {
-            border-color: #0066FF;
+            border-color: #00AAFF;
             background: rgba(0, 255, 255, 0.05);
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
         }
 
         .neural-dropzone.dragover {
-            border-color: #0066FF;
+            border-color: #00AAFF;
             background: rgba(0, 255, 255, 0.1);
             transform: scale(1.02);
         }
@@ -232,6 +237,7 @@
             font-size: 1.2rem;
             color: #ffffff;
             margin-bottom: 0.5rem;
+            font-weight: 600;
         }
 
         .dropzone-subtext {
@@ -260,7 +266,7 @@
         }
 
         .value-display {
-            color: #0066FF;
+            color: #00AAFF;
             font-weight: 700;
         }
 
@@ -282,7 +288,7 @@
             height: 20px;
             border-radius: 50%;
             background: #0066FF;
-            border: 2px solid #0066FF;
+            border: 2px solid #00AAFF;
             cursor: pointer;
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
         }
@@ -333,7 +339,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #0066FF;
+            color: #ffffff;
             font-weight: bold;
         }
 
@@ -341,6 +347,7 @@
             font-family: 'Open Sans', sans-serif;
             color: #0066FF;
             cursor: pointer;
+            font-weight: 500;
         }
 
         /* Neural Process Button */
@@ -361,7 +368,7 @@
             text-transform: uppercase;
         }
 
-        .neural-process-btn:hover {
+        .neural-process-btn:hover:not(:disabled) {
             background: linear-gradient(135deg, #00AAFF, #0066FF);
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
             transform: translateY(-3px);
@@ -439,7 +446,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #0066FF, #0066FF);
+            background: linear-gradient(90deg, #0066FF, #00AAFF);
             width: 0%;
             transition: width 0.3s ease;
             animation: energyFlow 2s linear infinite;
@@ -458,7 +465,7 @@
             height: 60px;
             border: 4px solid rgba(0, 255, 255, 0.1);
             border-top: 4px solid #0066FF;
-            border-right: 4px solid #0066FF;
+            border-right: 4px solid #00AAFF;
             border-radius: 50%;
             animation: neuralSpin 1s linear infinite;
             margin: 2rem auto;
@@ -484,98 +491,40 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            text-decoration: none;
+            font-weight: 500;
         }
 
         .action-btn:hover {
             background: rgba(0, 255, 255, 0.2);
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            color: #00AAFF;
         }
 
-        /* Privacy Features */
-        .privacy-features {
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #0066FF;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-top: 2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .feature-card {
-            background: rgba(0, 102, 255, 0.05);
-            border: 1px solid #0066FF;
-            border-radius: 10px;
-            padding: 1.5rem;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .feature-card:hover {
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
             background: rgba(0, 255, 255, 0.1);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-            transform: translateY(-5px);
-        }
-
-        .feature-icon {
-            font-size: 2.5rem;
+            border: 2px solid #0066FF;
             color: #0066FF;
-            margin-bottom: 1rem;
-        }
-
-        .feature-title {
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
             font-family: 'Open Sans', sans-serif;
-            color: #0066FF;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
         }
 
-        .feature-desc {
-            color: #0066FF;
-            font-size: 0.9rem;
-            opacity: 0.8;
+        .notification.show {
+            transform: translateX(0);
         }
 
-        /* Animations */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.05); }
-        }
-
-        @keyframes textGlow {
-            0% { text-shadow: 0 0 10px #0066FF; }
-            100% { text-shadow: 0 0 20px #0066FF, 0 0 30px #0066FF; }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-        }
-
-        @keyframes gridMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
-        }
-
-        @keyframes scanLine {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(100vh); }
-        }
-
-        @keyframes energyFlow {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-
-        @keyframes neuralSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .error {
+            border-color: #ff4444;
+            color: #ff4444;
         }
 
         /* Responsive Design */
@@ -583,19 +532,15 @@
             .interface-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .shield-title h1 {
                 font-size: 2rem;
             }
-            
+
             .neural-container {
                 padding: 1rem;
             }
-            
-            .detection-options {
-                grid-template-columns: 1fr;
-            }
-            
+
             .action-buttons {
                 flex-direction: column;
             }
@@ -697,36 +642,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Privacy Features -->
-        <div class="privacy-features">
-            <h2 class="interface-title">
-                <i class="fas fa-lock"></i>
-                PRIVACY SHIELD CAPABILITIES
-            </h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <i class="fas fa-user-secret feature-icon"></i>
-                    <div class="feature-title">FACE RECOGNITION</div>
-                    <div class="feature-desc">Advanced neural face detection with 99.7% accuracy</div>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-car feature-icon"></i>
-                    <div class="feature-title">PLATE MASKING</div>
-                    <div class="feature-desc">Automatic license plate detection and privacy protection</div>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-video feature-icon"></i>
-                    <div class="feature-title">REAL-TIME VIDEO</div>
-                    <div class="feature-desc">Live video stream processing with neural acceleration</div>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-sliders-h feature-icon"></i>
-                    <div class="feature-title">ADAPTIVE BLUR</div>
-                    <div class="feature-desc">Dynamic blur intensity based on detection confidence</div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -767,11 +682,12 @@
             const text = dropzone.querySelector('.dropzone-text');
             const subtext = dropzone.querySelector('.dropzone-subtext');
             
-            icon.className = file.type.startsWith('video/') ? 'fas fa-video dropzone-icon' : 'fas fa-image dropzone-icon';
+            icon.className = file.type.startsWith('video/') ? 
+                'fas fa-video dropzone-icon' : 'fas fa-image dropzone-icon';
             text.textContent = `TARGET: ${file.name}`;
             subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB • READY FOR NEURAL PROCESSING`;
             
-            dropzone.style.borderColor = '#0066FF';
+            dropzone.style.borderColor = '#00AAFF';
             dropzone.style.background = 'rgba(0, 255, 255, 0.1)';
         }
 
@@ -811,7 +727,7 @@
             // Show processing state
             resultsArea.innerHTML = `
                 <div class="neural-spinner"></div>
-                <p style="color: #0066FF; font-family: 'Open Sans', sans-serif; margin-top: 1rem;">
+                <p style="color: #0066FF; font-family: 'Open Sans', sans-serif; margin-top: 1rem; font-weight: 600;">
                     NEURAL PRIVACY SHIELD ACTIVE
                 </p>
                 <p style="color: #FFFFFF; font-size: 0.9rem;">
@@ -819,7 +735,7 @@
                 </p>
             `;
 
-            // Simulate neural processing
+            // Animate progress bar
             let progress = 0;
             const progressInterval = setInterval(() => {
                 progress += Math.random() * 15;
@@ -834,7 +750,7 @@
             formData.append('detect_plates', document.getElementById('detectPlates').checked);
 
             try {
-                const response = await fetch('/api/neural/blur/upload', {
+                const response = await fetch('/blur/api/neural/blur/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -845,61 +761,65 @@
                 progressFill.style.width = '100%';
                 
                 setTimeout(() => {
-                    displayResults(result);
+                    if (response.ok && result.status === 'COMPLETE') {
+                        displaySuccessResults(result);
+                        showNotification('Privacy shield successfully activated!');
+                    } else {
+                        showError(result.message || 'Privacy shield activation failed');
+                    }
                 }, 500);
                 
             } catch (error) {
                 clearInterval(progressInterval);
                 console.error('Neural error:', error);
-                showError(error.message || 'Privacy shield activation failed');
+                showError('Neural network connection failed. Please try again.');
             }
         }
 
-        function displayResults(result) {
+        function displaySuccessResults(result) {
             neuralProgress.style.display = 'none';
             processBtn.disabled = false;
             processBtn.innerHTML = '<i class="fas fa-shield-alt"></i> ACTIVATE PRIVACY SHIELD';
 
             const resultHtml = `
-                <img src="data:image/svg+xml,${encodeURIComponent(`
-                    <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100%" height="100%" fill="#000"/>
-                        <rect x="50" y="50" width="300" height="200" fill="#0066FF" opacity="0.1"/>
-                        <text x="200" y="150" text-anchor="middle" fill="#0066FF" font-family="sans-serif" font-size="16">
-                            PRIVACY SHIELD ACTIVE
-                        </text>
-                        <text x="200" y="180" text-anchor="middle" fill="#0066FF" font-family="sans-serif" font-size="12">
-                            Neural processing complete
-                        </text>
-                    </svg>
-                `)}" class="result-image" alt="Privacy shield result">
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="downloadResult()">
-                        <i class="fas fa-download"></i> DOWNLOAD
-                    </button>
-                    <button class="action-btn" onclick="copyResult()">
-                        <i class="fas fa-copy"></i> COPY LINK
-                    </button>
-                    <button class="action-btn" onclick="viewMetrics()">
-                        <i class="fas fa-chart-line"></i> METRICS
-                    </button>
+                <div style="text-align: center;">
+                    <h3 style="color: #0066FF; margin-bottom: 1rem; font-family: 'Open Sans', sans-serif;">
+                        <i class="fas fa-check-circle" style="color: #00ff88;"></i> PRIVACY SHIELD COMPLETE
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <h4 style="color: #0066FF; margin-bottom: 0.5rem;">ORIGINAL</h4>
+                            <img src="${result.input_image}" class="result-image" alt="Original Image">
+                        </div>
+                        <div>
+                            <h4 style="color: #0066FF; margin-bottom: 0.5rem;">PROTECTED</h4>
+                            <img src="${result.output_image}" class="result-image" alt="Protected Image">
+                        </div>
+                    </div>
+                    <div style="background: rgba(0, 102, 255, 0.05); padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                            <div>
+                                <span style="color: #0066FF;">DETECTIONS:</span>
+                                <span style="color: #00ff88; font-weight: bold;">${result.detections_found}</span>
+                            </div>
+                            <div>
+                                <span style="color: #0066FF;">INTENSITY:</span>
+                                <span style="color: #ffffff;">${result.neural_params.intensity}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <a href="${result.download_url}" class="action-btn">
+                            <i class="fas fa-download"></i> DOWNLOAD
+                        </a>
+                        <button class="action-btn" onclick="resetInterface()">
+                            <i class="fas fa-refresh"></i> NEW SCAN
+                        </button>
+                    </div>
                 </div>
             `;
             
             resultsArea.innerHTML = resultHtml;
-        }
-
-        function downloadResult() {
-            showNotification('Neural processing result downloaded');
-        }
-
-        function copyResult() {
-            navigator.clipboard.writeText('Neural processing result copied');
-            showNotification('Result link copied to neural buffer');
-        }
-
-        function viewMetrics() {
-            showNotification('Neural metrics: 99.7% face detection accuracy, 2.3s processing time');
         }
 
         function showError(message) {
@@ -908,69 +828,65 @@
             processBtn.innerHTML = '<i class="fas fa-shield-alt"></i> ACTIVATE PRIVACY SHIELD';
             
             resultsArea.innerHTML = `
-                <div style="text-align: center; color: #0066FF;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #0066FF;"></i>
-                    <p style="font-family: 'Open Sans', sans-serif; margin-bottom: 0.5rem;">NEURAL ERROR</p>
-                    <p style="color: #0066FF; font-size: 0.9rem;">${message}</p>
+                <div style="text-align: center; color: #ff4444;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #ff4444;"></i>
+                    <p style="font-family: 'Open Sans', sans-serif; margin-bottom: 0.5rem; font-weight: 600;">NEURAL ERROR</p>
+                    <p style="color: #ffffff; font-size: 0.9rem;">${message}</p>
+                    <button class="action-btn" onclick="resetInterface()" style="margin-top: 1rem; border-color: #ff4444; color: #ff4444;">
+                        <i class="fas fa-refresh"></i> TRY AGAIN
+                    </button>
+                </div>
+            `;
+            
+            showNotification(message, true);
+        }
+
+        function resetInterface() {
+            selectedFile = null;
+            fileInput.value = '';
+            processBtn.disabled = true;
+            
+            // Reset dropzone
+            const icon = dropzone.querySelector('.dropzone-icon');
+            const text = dropzone.querySelector('.dropzone-text');
+            const subtext = dropzone.querySelector('.dropzone-subtext');
+            
+            icon.className = 'fas fa-cloud-upload-alt dropzone-icon';
+            text.textContent = 'UPLOAD TARGET FILE';
+            subtext.textContent = 'JPG, PNG, MP4, AVI • MAX 100MB';
+            
+            dropzone.style.borderColor = '#0066FF';
+            dropzone.style.background = 'rgba(0, 102, 255, 0.02)';
+            
+            // Reset results area
+            resultsArea.innerHTML = `
+                <div class="results-placeholder">
+                    <i class="fas fa-shield-alt"></i>
+                    <p>PRIVACY SHIELD STANDBY</p>
+                    <p>Awaiting neural processing target...</p>
                 </div>
             `;
         }
 
-        function showNotification(message) {
+        function showNotification(message, isError = false) {
             const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: rgba(0, 255, 255, 0.1);
-                border: 2px solid #0066FF;
-                color: #0066FF;
-                padding: 1rem 1.5rem;
-                border-radius: 10px;
-                font-family: 'Open Sans', sans-serif;
-                z-index: 10000;
-                animation: slideIn 0.3s ease;
+            notification.className = `notification ${isError ? 'error' : ''}`;
+            notification.innerHTML = `
+                <i class="fas fa-${isError ? 'exclamation-triangle' : 'check-circle'}"></i>
+                ${message}
             `;
-            notification.textContent = message;
             
             document.body.appendChild(notification);
             
+            setTimeout(() => notification.classList.add('show'), 100);
             setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 300);
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
             }, 3000);
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            updateIntensity();
-            
-            setTimeout(() => {
-                resultsArea.innerHTML = `
-                    <div class="results-placeholder">
-                        <i class="fas fa-shield-alt" style="color: #0066FF;"></i>
-                        <p style="color: #FFFFFF;">PRIVACY SHIELD ONLINE</p>
-                        <p style="color: #FFFFFF;">Neural networks synchronized • Ready for processing</p>
-                    </div>
-                `;
-            }, 1000);
-        });
-
-        // Add CSS for animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
+        // Initialize interface
+        updateIntensity();
     </script>
 </body>
 </html>

@@ -17,6 +17,11 @@ import threading
 from modules.blur_module import blur_bp
 from TextExtraction import extract_text_from_image, extract_text
 
+
+import base64
+
+from flask import send_file
+
 import tempfile
 from werkzeug.utils import secure_filename
 from modules.object_detection.object_detection import ObjectDetector
@@ -396,11 +401,281 @@ def neural_process_video(video_path, job_id, detector):
     except Exception as e:
         logger.error(f"NEURAL: Critical error in video processing: {str(e)}")
 
+################################################################## NEW  ################################################################## 
+
+@app.route('/blur/api/neural/blur/upload', methods=['POST'])
+def neural_blur_upload_proxy():
+    """Proxy route to handle neural blur upload from the new frontend"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'NO_INPUT_DETECTED',
+                'message': 'Neural network requires input data stream'
+            }), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({
+                'status': 'ERROR', 
+                'neural_response': 'EMPTY_STREAM',
+                'message': 'Data stream is empty'
+            }), 400
+        
+        # Import the blur module functions
+        from modules.blur_module import (
+            process_image_with_blur, face_model, plate_model, 
+            models_loaded, encode_image, secure_filename
+        )
+        
+        if not models_loaded:
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'MODEL_ERROR',
+                'message': 'Neural models not loaded properly'
+            }), 500
+        
+        # Generate neural job ID
+        import random
+        import time
+        job_id = f"NEURAL_{int(time.time())}_{random.randint(1000, 9999)}"
+        
+        # Save uploaded file
+        filename = secure_filename(file.filename)
+        file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else 'jpg'
+        processed_filename = f"{job_id}.{file_ext}"
+        
+        # Ensure directories exist
+        os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+        os.makedirs(Config.PROCESSED_FOLDER, exist_ok=True)
+        
+        input_path = os.path.join(Config.UPLOAD_FOLDER, processed_filename)
+        file.save(input_path)
+        
+        # Get neural parameters
+        intensity = request.form.get('intensity', '50')
+        detect_faces = request.form.get('detect_faces', 'true') == 'true'
+        detect_plates = request.form.get('detect_plates', 'true') == 'true'
+        
+        # Process the image
+        import cv2
+        input_image = cv2.imread(input_path)
+        if input_image is None:
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'INVALID_IMAGE',
+                'message': 'Could not read uploaded image'
+            }), 400
+        
+        # Apply privacy shield processing
+        output_image, detections = process_image_with_blur(
+            input_image,
+            face_model,
+            plate_model,
+            intensity,
+            detect_faces,
+            detect_plates,
+            False
+        )
+        
+        # Save processed image
+        output_path = os.path.join(Config.PROCESSED_FOLDER, processed_filename)
+        cv2.imwrite(output_path, output_image)
+        
+        return jsonify({
+            'status': 'COMPLETE',
+            'neural_response': 'PRIVACY_SHIELD_COMPLETE',
+            'job_id': job_id,
+            'processed_filename': processed_filename,
+            'detections_found': len(detections),
+            'neural_params': {
+                'intensity': intensity,
+                'face_detection': detect_faces,
+                'plate_detection': detect_plates
+            },
+            'input_image': f"data:image/jpeg;base64,{encode_image(input_image)}",
+            'output_image': f"data:image/jpeg;base64,{encode_image(output_image)}",
+            'download_url': f'/blur/download/{processed_filename}',
+            'message': 'Neural privacy protocols successfully applied'
+        })
+        
+    except Exception as e:
+        logger.error(f"Neural blur proxy error: {str(e)}")
+        return jsonify({
+            'status': 'CRITICAL_ERROR',
+            'neural_response': 'SYSTEM_FAILURE',
+            'message': f'Neural network encountered critical error: {str(e)}'
+        }), 500
+
+@app.route('/blur/api/neural/blur/upload', methods=['POST'])
+def neural_blur_upload_handler():
+    """Handle neural blur upload from the frontend"""
+    try:
+        logger.info("Neural blur upload request received")
+        
+        if 'file' not in request.files:
+            logger.error("No file in request")
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'NO_INPUT_DETECTED',
+                'message': 'Neural network requires input data stream'
+            }), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            logger.error("Empty filename")
+            return jsonify({
+                'status': 'ERROR', 
+                'neural_response': 'EMPTY_STREAM',
+                'message': 'Data stream is empty'
+            }), 400
+        
+        # Generate neural job ID
+        job_id = f"NEURAL_{generate_unique_id()}"
+        
+        # Save uploaded file
+        filename = secure_filename(file.filename)
+        file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else 'jpg'
+        processed_filename = f"{job_id}.{file_ext}"
+        
+        # Ensure directories exist
+        import os
+        os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+        os.makedirs(Config.PROCESSED_FOLDER, exist_ok=True)
+        
+        input_path = os.path.join(Config.UPLOAD_FOLDER, processed_filename)
+        file.save(input_path)
+        logger.info(f"File saved to: {input_path}")
+        
+        # Get parameters
+        intensity = request.form.get('intensity', '50')
+        detect_faces = request.form.get('detect_faces', 'true') == 'true'
+        detect_plates = request.form.get('detect_plates', 'true') == 'true'
+        
+        # Process with OpenCV (simple and reliable)
+        import cv2
+        import numpy as np
+        import base64
+        
+        input_image = cv2.imread(input_path)
+        if input_image is None:
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'INVALID_IMAGE',
+                'message': 'Could not read uploaded image'
+            }), 400
+        
+        output_image = input_image.copy()
+        detections_count = 0
+        
+        # Face detection with OpenCV Haar Cascades
+        if detect_faces:
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            gray = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            
+            kernel_size = max(15, min(51, int(int(intensity) * 0.5) + 15))
+            if kernel_size % 2 == 0:
+                kernel_size += 1
+                
+            for (x, y, w, h) in faces:
+                roi = output_image[y:y+h, x:x+w]
+                blurred_roi = cv2.GaussianBlur(roi, (kernel_size, kernel_size), 0)
+                output_image[y:y+h, x:x+w] = blurred_roi
+                detections_count += 1
+        
+        # Simple license plate detection
+        if detect_plates:
+            gray = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
+            edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+            contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            
+            kernel_size = max(15, min(51, int(int(intensity) * 0.5) + 15))
+            if kernel_size % 2 == 0:
+                kernel_size += 1
+                
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                if area > 500:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    aspect_ratio = w / h
+                    
+                    if 2.0 <= aspect_ratio <= 5.0 and w > 50 and h > 15:
+                        padding = 5
+                        x = max(0, x - padding)
+                        y = max(0, y - padding)
+                        w = min(output_image.shape[1] - x, w + 2*padding)
+                        h = min(output_image.shape[0] - y, h + 2*padding)
+                        
+                        roi = output_image[y:y+h, x:x+w]
+                        blurred_roi = cv2.GaussianBlur(roi, (kernel_size, kernel_size), 0)
+                        output_image[y:y+h, x:x+w] = blurred_roi
+                        detections_count += 1
+        
+        # Save processed image
+        output_path = os.path.join(Config.PROCESSED_FOLDER, processed_filename)
+        cv2.imwrite(output_path, output_image)
+        
+        # Encode images
+        def encode_image(image):
+            _, buffer = cv2.imencode('.jpg', image)
+            return base64.b64encode(buffer).decode('utf-8')
+        
+        return jsonify({
+            'status': 'COMPLETE',
+            'neural_response': 'PRIVACY_SHIELD_COMPLETE',
+            'job_id': job_id,
+            'processed_filename': processed_filename,
+            'detections_found': detections_count,
+            'neural_params': {
+                'intensity': intensity,
+                'face_detection': detect_faces,
+                'plate_detection': detect_plates
+            },
+            'input_image': f"data:image/jpeg;base64,{encode_image(input_image)}",
+            'output_image': f"data:image/jpeg;base64,{encode_image(output_image)}",
+            'download_url': f'/blur/download/{processed_filename}',
+            'message': 'Neural privacy protocols successfully applied'
+        })
+        
+    except Exception as e:
+        logger.error(f"Neural blur error: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'CRITICAL_ERROR',
+            'neural_response': 'SYSTEM_FAILURE',
+            'message': f'Neural network error: {str(e)}'
+        }), 500
+
+@app.route('/blur/download/<filename>')
+def download_processed_file(filename):
+    """Download processed file"""
+    try:
+        filepath = os.path.join(Config.PROCESSED_FOLDER, filename)
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'File not found'}), 404
+        return send_file(filepath, as_attachment=True, download_name=filename)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+# Ensure the neural-blur route exists and points to the correct template
+
 ################################################################## 
-if __name__ == "__main__":
-    # Initialize neural network environment
-    os.makedirs("uploads", exist_ok=True)
+if __name__ == '__main__':
+    # Initialize directories on startup
+    try:
+        Config.init_directories()
+        logger.info("Application directories initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing directories: {e}")
     
-    # Start neural vision interface
-    logger.info("NEURAL: Initializing OptiView Neural Vision Interface...")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # IMPORTANT: Disable auto-reload to fix Windows socket issues
+    print("🚀 Starting Neural Vision Server...")
+    print("🌐 Access the application at: http://127.0.0.1:5000/neural-blur")
+    print("⚠️  Auto-reload disabled to prevent Windows socket issues")
+    
+    app.run(
+        debug=True,
+        use_reloader=False,  # This fixes the Windows threading issues
+        host='127.0.0.1',
+        port=5000,
+        threaded=True
+    )

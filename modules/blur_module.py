@@ -12,6 +12,8 @@ import zipfile
 from io import BytesIO
 from werkzeug.utils import secure_filename
 import logging
+from ultralytics import YOLO
+import requests
 
 # Import configuration
 from config import Config
@@ -29,13 +31,39 @@ processing_state = {
     'current_session': None
 }
 
-# Load YOLOv5 models for face and plate detection
-try:
-    face_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-    plate_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-    logger.info("Models loaded successfully")
-except Exception as e:
-    logger.error(f"Error loading models: {e}")
+# Initialize models
+face_model = None
+plate_model = None
+
+def initialize_models():
+    """Initialize YOLOv8 models for face and license plate detection"""
+    global face_model, plate_model
+    
+    try:
+        # Initialize YOLOv8 models
+        # For face detection, we'll use a pre-trained model and filter for 'person' class
+        face_model = YOLO('yolov8n.pt')
+        
+        # For license plate detection, we'll use the same model and look for specific patterns
+        # You can replace this with a custom trained license plate model
+        plate_model = YOLO('yolov8n.pt')
+        
+        logger.info("Models initialized successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Error initializing models: {e}")
+        try:
+            # Fallback to YOLOv5 if YOLOv8 fails
+            face_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+            plate_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+            logger.info("Fallback to YOLOv5 models successful")
+            return True
+        except Exception as e2:
+            logger.error(f"Error loading fallback models: {e2}")
+            return False
+
+# Initialize models on module load
+models_loaded = initialize_models()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
@@ -53,6 +81,17 @@ def calculate_kernel_size(intensity):
 def blur_region(image, region, intensity='25'):
     """Apply Gaussian blur to a specific region with given intensity"""
     x, y, w, h = region
+    
+    # Ensure coordinates are within image bounds
+    height, width = image.shape[:2]
+    x = max(0, min(x, width))
+    y = max(0, min(y, height))
+    w = max(0, min(w, width - x))
+    h = max(0, min(h, height - y))
+    
+    if w <= 0 or h <= 0:
+        return image
+    
     roi = image[y:y+h, x:x+w]
     kernel_size = calculate_kernel_size(intensity)
     blurred_roi = cv2.GaussianBlur(roi, (kernel_size, kernel_size), 0)
@@ -63,40 +102,150 @@ def draw_boxes(image, detections):
     """Draw bounding boxes around detected regions"""
     image_with_boxes = image.copy()
     for detection in detections:
-        x1, y1, x2, y2, confidence, cls = detection
+        if len(detection) >= 6:
+            x1, y1, x2, y2, confidence, cls = detection[:6]
+        else:
+            x1, y1, x2, y2, confidence = detection[:5]
+            
         if confidence > 0.4:
             cv2.rectangle(image_with_boxes, 
                          (int(x1), int(y1)), 
                          (int(x2), int(y2)), 
-                         (255, 0, 0), 2)
+                         (0, 255, 0), 2)
+            # Add confidence text
+            cv2.putText(image_with_boxes, 
+                       f'{confidence:.2f}', 
+                       (int(x1), int(y1)-10), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 
+                       0.5, (0, 255, 0), 1)
     return image_with_boxes
 
-def detect_and_blur(image, model, blur_intensity='25'):
-    """Detect objects and apply blur with specified intensity"""
-    results = model(image)
-    detections = results.xyxy[0].numpy()
+def detect_faces(image, model, confidence_threshold=0.3):
+    """Detect faces in image using YOLO model"""
+    detections = []
+    try:
+        # Use YOLOv8 or YOLOv5 based on model type
+        if hasattr(model, 'predict'):
+            # YOLOv8
+            results = model.predict(image, conf=confidence_threshold, verbose=False)
+            for result in results:
+                boxes = result.boxes
+                if boxes is not None:
+                    for box in boxes:
+                        # Filter for person class (class 0 in COCO dataset)
+                        if int(box.cls) == 0:  # person class
+                            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                            conf = box.conf[0].cpu().numpy()
+                            
+                            # Estimate face region (upper portion of person detection)
+                            face_height = (y2 - y1) * 0.3
+                            face_y2 = y1 + face_height
+                            
+                            detections.append([x1, y1, x2, face_y2, conf, 0])
+        else:
+            # YOLOv5
+            results = model(image)
+            pred = results.xyxy[0].cpu().numpy()
+            
+            for detection in pred:
+                x1, y1, x2, y2, conf, cls = detection
+                # Filter for person class
+                if int(cls) == 0 and conf > confidence_threshold:
+                    # Estimate face region
+                    face_height = (y2 - y1) * 0.3
+                    face_y2 = y1 + face_height
+                    detections.append([x1, y1, x2, face_y2, conf, cls])
+                    
+    except Exception as e:
+        logger.error(f"Error in face detection: {e}")
+        
+    return detections
+
+def detect_license_plates(image, model, confidence_threshold=0.3):
+    """Detect license plates in image"""
+    detections = []
+    try:
+        # Convert image to grayscale for plate detection preprocessing
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Use edge detection to find potential plate regions
+        edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+        contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for contour in contours:
+            # Calculate contour area and bounding rectangle
+            area = cv2.contourArea(contour)
+            if area > 500:  # Minimum area threshold
+                x, y, w, h = cv2.boundingRect(contour)
+                aspect_ratio = w / h
+                
+                # License plates typically have aspect ratio between 2:1 and 5:1
+                if 2.0 <= aspect_ratio <= 5.0 and w > 50 and h > 15:
+                    # Add some padding
+                    padding = 5
+                    x = max(0, x - padding)
+                    y = max(0, y - padding)
+                    w = min(image.shape[1] - x, w + 2*padding)
+                    h = min(image.shape[0] - y, h + 2*padding)
+                    
+                    detections.append([x, y, x+w, y+h, 0.7, 999])  # Use custom class 999 for plates
+                    
+    except Exception as e:
+        logger.error(f"Error in license plate detection: {e}")
+        
+    return detections
+
+def process_image_with_blur(image, face_model, plate_model, blur_intensity='25', detect_faces_flag=True, detect_plates_flag=True, show_boxes=False):
+    """Process image with face and plate detection and blurring"""
+    output = image.copy()
+    all_detections = []
     
-    detected_regions = []
-    
-    for detection in detections:
-        x1, y1, x2, y2, confidence, cls = detection
-        if confidence > 0.4:
-            image = blur_region(image, 
-                              (int(x1), int(y1), int(x2-x1), int(y2-y1)), 
-                              blur_intensity)
-            detected_regions.append(detection)
-    
-    return image, detected_regions
+    try:
+        # Face detection
+        if detect_faces_flag and face_model:
+            face_detections = detect_faces(image, face_model)
+            
+            # Apply blur to faces
+            for detection in face_detections:
+                x1, y1, x2, y2, confidence, cls = detection
+                if confidence > 0.3:
+                    output = blur_region(output, 
+                                      (int(x1), int(y1), int(x2-x1), int(y2-y1)), 
+                                      blur_intensity)
+                    all_detections.append(detection)
+        
+        # License plate detection
+        if detect_plates_flag and plate_model:
+            plate_detections = detect_license_plates(image, plate_model)
+            
+            # Apply blur to plates
+            for detection in plate_detections:
+                x1, y1, x2, y2, confidence, cls = detection
+                output = blur_region(output, 
+                                  (int(x1), int(y1), int(x2-x1), int(y2-y1)), 
+                                  blur_intensity)
+                all_detections.append(detection)
+        
+        # Draw boxes if requested
+        if show_boxes and len(all_detections) > 0:
+            output = draw_boxes(output, all_detections)
+            
+    except Exception as e:
+        logger.error(f"Error processing image: {e}")
+        
+    return output, all_detections
 
 def encode_image(image):
     """Convert OpenCV image to base64 string"""
     _, buffer = cv2.imencode('.jpg', image)
     return base64.b64encode(buffer).decode('utf-8')
 
+# Routes
+
 @blur_bp.route('/')
 def index():
     """Render the blur module page"""
-    return render_template('blur_module.html')
+    return render_template('neural_blur.html')
 
 @blur_bp.route('/upload', methods=['POST'])
 def upload_files():
@@ -106,6 +255,9 @@ def upload_files():
     
     files = request.files.getlist('files[]')
     uploaded_files = []
+    
+    # Ensure upload directory exists
+    os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
     
     for file in files:
         if file and allowed_file(file.filename):
@@ -117,65 +269,17 @@ def upload_files():
     
     return jsonify({'uploaded': uploaded_files})
 
-@blur_bp.route('/download/<filename>')
-def download_file(filename):
-    """Download a single processed image"""
-    try:
-        return send_file(
-            os.path.join(Config.PROCESSED_FOLDER, filename),
-            as_attachment=True,
-            download_name=filename
-        )
-    except Exception as e:
-        logger.error(f"Download error: {e}")
-        return jsonify({'error': str(e)}), 404
-
-@blur_bp.route('/download-zip')
-def download_zip():
-    """Download all processed images as ZIP"""
-    memory_file = BytesIO()
-    with zipfile.ZipFile(memory_file, 'w') as zf:
-        for filename in os.listdir(Config.PROCESSED_FOLDER):
-            if allowed_file(filename):
-                file_path = os.path.join(Config.PROCESSED_FOLDER, filename)
-                zf.write(file_path, filename)
-    
-    memory_file.seek(0)
-    return send_file(
-        memory_file,
-        mimetype='application/zip',
-        as_attachment=True,
-        download_name='processed_images.zip'
-    )
-
-@blur_bp.route('/control-processing', methods=['POST'])
-def control_processing():
-    """Handle processing control commands (pause/resume/stop)"""
-    command = request.json.get('command')
-    session_id = request.json.get('sessionId')
-    
-    if session_id != processing_state['current_session']:
-        return jsonify({'error': 'Invalid session ID'})
-    
-    if command == 'pause':
-        processing_state['pause_event'].clear()
-        logger.info("Processing paused")
-    elif command == 'resume':
-        processing_state['pause_event'].set()
-        logger.info("Processing resumed")
-    elif command == 'stop':
-        processing_state['stop_event'].set()
-        logger.info("Processing stopped")
-    
-    return jsonify({'status': 'success'})
-
 @blur_bp.route('/process-stream')
 def process_stream():
-    """Process images and stream results back to the client."""
+    """Stream processing of uploaded images with real-time updates"""
+    if not models_loaded:
+        return jsonify({'error': 'Models not loaded properly'}), 500
+        
     blur_intensity = request.args.get('blurIntensity', '25')
     session_id = request.args.get('sessionId')
-    show_boxes = request.args.get('showBoxes', 'false').lower() == 'true'  
-
+    show_boxes = request.args.get('showBoxes', 'false').lower() == 'true'
+    detect_faces_flag = request.args.get('detectFaces', 'true').lower() == 'true'
+    detect_plates_flag = request.args.get('detectPlates', 'true').lower() == 'true'
 
     # Reset processing state
     processing_state['pause_event'].set()
@@ -185,11 +289,22 @@ def process_stream():
     logger.info(f"Starting processing stream with intensity {blur_intensity}")
 
     def generate():
+        if not os.path.exists(Config.UPLOAD_FOLDER):
+            yield f"data: {json.dumps({'error': 'Upload folder not found'})}\n\n"
+            return
+            
         images = [f for f in os.listdir(Config.UPLOAD_FOLDER) if allowed_file(f)]
         total_images = len(images)
         processed_count = 0
 
         logger.info(f"Found {total_images} images to process")
+        
+        if total_images == 0:
+            yield f"data: {json.dumps({'error': 'No images found to process'})}\n\n"
+            return
+
+        # Ensure processed folder exists
+        os.makedirs(Config.PROCESSED_FOLDER, exist_ok=True)
 
         for filename in images:
             if processing_state['stop_event'].is_set():
@@ -204,51 +319,25 @@ def process_stream():
                 logger.warning(f"File not found: {input_path}")
                 continue
 
-            input_image = cv2.imread(input_path)
-            if input_image is None:
-                logger.error(f"Could not read image: {filename}")
-                yield f"data: {json.dumps({'error': f'Could not read image: {filename}'})}\n\n"
-                continue
-
             try:
-                output = input_image.copy()
+                input_image = cv2.imread(input_path)
+                if input_image is None:
+                    logger.error(f"Could not read image: {filename}")
+                    yield f"data: {json.dumps({'error': f'Could not read image: {filename}'})}\n\n"
+                    continue
 
-                # First, perform detection
-                face_results = face_model(input_image.copy())
-                face_detections = face_results.xyxy[0].numpy()
-                
-                plate_results = plate_model(input_image.copy())
-                plate_detections = plate_results.xyxy[0].numpy()
-                
-                # Apply blur
-                for detection in face_detections:
-                    x1, y1, x2, y2, confidence, cls = detection
-                    if confidence > 0.4:
-                        output = blur_region(output, 
-                                          (int(x1), int(y1), int(x2-x1), int(y2-y1)), 
-                                          blur_intensity)
-                
-                for detection in plate_detections:
-                    x1, y1, x2, y2, confidence, cls = detection
-                    if confidence > 0.4:
-                        output = blur_region(output, 
-                                          (int(x1), int(y1), int(x2-x1), int(y2-y1)), 
-                                          blur_intensity)
-                
-                # If show_boxes is enabled, draw the detection boxes
-                if show_boxes:
-                    # Combine all detections for drawing
-                    all_detections = np.vstack([face_detections, plate_detections]) if len(face_detections) > 0 and len(plate_detections) > 0 else \
-                                   face_detections if len(face_detections) > 0 else \
-                                   plate_detections if len(plate_detections) > 0 else np.array([])
-                    
-                    if len(all_detections) > 0:
-                        output = draw_boxes(output, all_detections)
+                # Process image with blur
+                output, detections = process_image_with_blur(
+                    input_image, 
+                    face_model, 
+                    plate_model, 
+                    blur_intensity,
+                    detect_faces_flag,
+                    detect_plates_flag,
+                    show_boxes
+                )
 
-                        
-                output, face_detections = detect_and_blur(output, face_model, blur_intensity)
-                output, plate_detections = detect_and_blur(output, plate_model, blur_intensity)
-
+                # Save processed image
                 output_path = os.path.join(Config.PROCESSED_FOLDER, filename)
                 cv2.imwrite(output_path, output)
 
@@ -257,13 +346,15 @@ def process_stream():
                     'processed': processed_count + 1,
                     'total': total_images,
                     'input_image': f"data:image/jpeg;base64,{encode_image(input_image)}",
-                    'output_image': f"data:image/jpeg;base64,{encode_image(output)}"
+                    'output_image': f"data:image/jpeg;base64,{encode_image(output)}",
+                    'detections_count': len(detections)
                 }
 
                 processed_count += 1
                 logger.info(f"Processed {processed_count}/{total_images}: {filename}")
                 yield f"data: {json.dumps(progress_data)}\n\n"
                 time.sleep(0.1)
+                
             except Exception as e:
                 logger.error(f"Error processing {filename}: {e}")
                 yield f"data: {json.dumps({'error': f'Error processing {filename}: {str(e)}'})}\n\n"
@@ -273,54 +364,166 @@ def process_stream():
 
     return Response(generate(), mimetype='text/event-stream')
 
-# Additional utility routes
+# API endpoint for neural_blur.html integration
+@blur_bp.route('/api/neural/blur/upload', methods=['POST'])
+def neural_blur_upload():
+    """Handle single file upload from neural_blur.html interface"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'NO_INPUT_DETECTED',
+                'message': 'Neural network requires input data stream'
+            }), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({
+                'status': 'ERROR', 
+                'neural_response': 'EMPTY_STREAM',
+                'message': 'Data stream is empty'
+            }), 400
+        
+        if not models_loaded:
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'MODEL_ERROR',
+                'message': 'Neural models not loaded properly'
+            }), 500
+        
+        # Generate neural job ID
+        import random
+        job_id = f"NEURAL_{int(time.time())}_{random.randint(1000, 9999)}"
+        
+        # Save uploaded file
+        filename = secure_filename(file.filename)
+        file_ext = filename.rsplit('.', 1)[1].lower()
+        processed_filename = f"{job_id}.{file_ext}"
+        
+        # Ensure directories exist
+        os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+        os.makedirs(Config.PROCESSED_FOLDER, exist_ok=True)
+        
+        input_path = os.path.join(Config.UPLOAD_FOLDER, processed_filename)
+        file.save(input_path)
+        
+        # Get neural parameters
+        intensity = request.form.get('intensity', '50')
+        detect_faces = request.form.get('detect_faces', 'true') == 'true'
+        detect_plates = request.form.get('detect_plates', 'true') == 'true'
+        
+        # Process the image
+        input_image = cv2.imread(input_path)
+        if input_image is None:
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'INVALID_IMAGE',
+                'message': 'Could not read uploaded image'
+            }), 400
+        
+        # Apply privacy shield processing
+        output_image, detections = process_image_with_blur(
+            input_image,
+            face_model,
+            plate_model,
+            intensity,
+            detect_faces,
+            detect_plates,
+            False
+        )
+        
+        # Save processed image
+        output_path = os.path.join(Config.PROCESSED_FOLDER, processed_filename)
+        cv2.imwrite(output_path, output_image)
+        
+        return jsonify({
+            'status': 'COMPLETE',
+            'neural_response': 'PRIVACY_SHIELD_COMPLETE',
+            'job_id': job_id,
+            'processed_filename': processed_filename,
+            'detections_found': len(detections),
+            'neural_params': {
+                'intensity': intensity,
+                'face_detection': detect_faces,
+                'plate_detection': detect_plates
+            },
+            'input_image': f"data:image/jpeg;base64,{encode_image(input_image)}",
+            'output_image': f"data:image/jpeg;base64,{encode_image(output_image)}",
+            'download_url': f'/blur/download/{processed_filename}',
+            'message': 'Neural privacy protocols successfully applied'
+        })
+        
+    except Exception as e:
+        logger.error(f"Neural blur error: {str(e)}")
+        return jsonify({
+            'status': 'CRITICAL_ERROR',
+            'neural_response': 'SYSTEM_FAILURE',
+            'message': f'Neural network encountered critical error: {str(e)}'
+        }), 500
+
+@blur_bp.route('/download/<filename>')
+def download_file(filename):
+    """Download a single processed image"""
+    try:
+        filepath = os.path.join(Config.PROCESSED_FOLDER, filename)
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'File not found'}), 404
+            
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        logger.error(f"Download error: {str(e)}")
+        return jsonify({'error': f'Download failed: {str(e)}'}), 500
+
 @blur_bp.route('/status')
 def status():
     """Return module status information"""
     return jsonify({
         'status': 'active',
-        'models_loaded': face_model is not None and plate_model is not None,
+        'models_loaded': models_loaded,
         'upload_directory': Config.UPLOAD_FOLDER,
         'processed_directory': Config.PROCESSED_FOLDER,
         'file_count': {
-            'uploads': len([f for f in os.listdir(Config.UPLOAD_FOLDER) if allowed_file(f)]),
-            'processed': len([f for f in os.listdir(Config.PROCESSED_FOLDER) if allowed_file(f)])
+            'uploads': len([f for f in os.listdir(Config.UPLOAD_FOLDER) if allowed_file(f)]) if os.path.exists(Config.UPLOAD_FOLDER) else 0,
+            'processed': len([f for f in os.listdir(Config.PROCESSED_FOLDER) if allowed_file(f)]) if os.path.exists(Config.PROCESSED_FOLDER) else 0
         }
     })
 
-@blur_bp.route('/clean/<folder>')
-def clean_folder(folder):
-    """Clean upload or processed folders"""
-    if folder not in ['uploads', 'processed']:
-        return jsonify({'error': 'Invalid folder specified'}), 400
+@blur_bp.route('/control-processing', methods=['POST'])
+def control_processing():
+    """Control processing state (pause/resume/stop)"""
+    command = request.json.get('command')
     
-    target_folder = Config.UPLOAD_FOLDER if folder == 'uploads' else Config.PROCESSED_FOLDER
+    if command == 'pause':
+        processing_state['pause_event'].clear()
+    elif command == 'resume':
+        processing_state['pause_event'].set()
+    elif command == 'stop':
+        processing_state['stop_event'].set()
+        processing_state['pause_event'].set()
     
-    count = 0
-    for filename in os.listdir(target_folder):
-        if allowed_file(filename):
-            file_path = os.path.join(target_folder, filename)
-            os.remove(file_path)
-            count += 1
-    
-    logger.info(f"Cleaned {count} files from {folder} folder")
-    return jsonify({'status': 'success', 'files_removed': count})
+    return jsonify({'status': 'success', 'command': command})
 
-@blur_bp.route('/fetch-local')
-def fetch_local_images():
-    """Fetch images from the local repository folder"""
+@blur_bp.route('/clean', methods=['POST'])
+def clean_directories():
+    """Clean upload and processed directories"""
     try:
-        local_images = [f for f in os.listdir(Config.LOCAL_FOLDER) if allowed_file(f)]
+        # Clean upload directory
+        if os.path.exists(Config.UPLOAD_FOLDER):
+            for filename in os.listdir(Config.UPLOAD_FOLDER):
+                if allowed_file(filename):
+                    os.remove(os.path.join(Config.UPLOAD_FOLDER, filename))
         
-        # Copy local images to the upload folder for processing
-        for filename in local_images:
-            source_path = os.path.join(Config.LOCAL_FOLDER, filename)
-            dest_path = os.path.join(Config.UPLOAD_FOLDER, filename)
-            if os.path.exists(source_path) and not os.path.exists(dest_path):
-                import shutil
-                shutil.copy2(source_path, dest_path)
+        # Clean processed directory
+        if os.path.exists(Config.PROCESSED_FOLDER):
+            for filename in os.listdir(Config.PROCESSED_FOLDER):
+                if allowed_file(filename):
+                    os.remove(os.path.join(Config.PROCESSED_FOLDER, filename))
         
-        return jsonify({'images': local_images})
+        return jsonify({'status': 'success', 'message': 'Directories cleaned'})
     except Exception as e:
-        logger.error(f"Error fetching local images: {e}")
-        return jsonify({'error': str(e), 'images': []}), 500
+        logger.error(f"Clean error: {str(e)}")
+        return jsonify({'error': f'Clean failed: {str(e)}'}), 500
