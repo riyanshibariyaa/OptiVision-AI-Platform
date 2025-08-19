@@ -6,7 +6,7 @@
     <title>OptiView - Neural Vision Interface</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open Sans:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         * {
@@ -98,7 +98,7 @@
         }
 
         .logo-text {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Open Sans', sans-serif;
             font-size: 2rem;
             font-weight: 900;
             color: #FFFFFF;
@@ -162,7 +162,7 @@
         }
 
         .network-title {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Open Sans', sans-serif;
             font-size: 1.5rem;
             color: #FFFFFF;
             margin-bottom: 2rem;
@@ -193,7 +193,7 @@
         }
 
         .layer-label {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Open Sans', sans-serif;
             font-size: 0.8rem;
             color: #0066FF;
             text-transform: uppercase;
@@ -203,8 +203,8 @@
 
         .neural-node {
             position: relative;
-            width: 80px;
-            height: 80px;
+            width: 50px;
+            height: 50px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -218,7 +218,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.8rem;
+            font-size: 1.2rem;
             color: #FFFFFF;
             position: relative;
             z-index: 2;
@@ -242,7 +242,7 @@
             bottom: -25px;
             left: 50%;
             transform: translateX(-50%);
-            font-family: 'Orbitron', monospace;
+            font-family: 'Open Sans', sans-serif;
             font-size: 0.7rem;
             color: #0066FF;
             text-align: center;
@@ -254,7 +254,7 @@
             top: -20px;
             left: 50%;
             transform: translateX(-50%);
-            font-family: 'Orbitron', monospace;
+            font-family: 'Open Sans', sans-serif;
             font-size: 0.6rem;
             color: #4fd1c7;
             background: rgba(0, 255, 255, 0.1);
@@ -291,8 +291,8 @@
 
         /* Processing Nodes */
         .processing-node {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
         }
 
         .processing-node .node-core {
@@ -398,7 +398,7 @@
         .dot-green { background: #00FF00; }
 
         .terminal-title {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Open Sans', sans-serif;
             color: #FFFFFF;
             font-size: 0.9rem;
             margin-left: 1rem;
@@ -412,7 +412,7 @@
         }
 
         .terminal-line {
-            font-family: 'Rajdhani', monospace;
+            font-family: 'Rajdhani', sans-serif;
             font-size: 0.9rem;
             margin-bottom: 0.3rem;
             animation: typewriter 0.5s ease-in;
@@ -469,7 +469,7 @@
         }
 
         .metric-value {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Open Sans', sans-serif;
             font-size: 2rem;
             font-weight: 700;
             color: #FFFFFF;
@@ -532,7 +532,7 @@
         }
 
         .button-text h3 {
-            font-family: 'Orbitron', monospace;
+            font-family: 'Open Sans', sans-serif;
             font-size: 1.2rem;
             margin-bottom: 0.5rem;
             color: #0066FF;
@@ -658,7 +658,7 @@
             }
             
             .node-core {
-                font-size: 1.4rem;
+                font-size: 1.6rem;
             }
             
             .processing-node {
@@ -667,11 +667,11 @@
             }
             
             .processing-node .node-core {
-                font-size: 1rem;
+                font-size: 2rem;
             }
             
             .neural-container {
-                padding: 1rem;
+                padding: 2rem;
             }
         }
     </style>
@@ -767,7 +767,7 @@
                     </div>
                     <div class="neural-node processing-node" data-id="proc4">
                         <div class="node-core">
-                            <i class="fas fa-cpu"></i>
+                            <i class="fas fa-server"></i>
                         </div>
                         <div class="node-pulse"></div>
                     </div>
