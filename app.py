@@ -271,42 +271,7 @@ def neural_ocr_upload():
             'message': 'Neural text extraction failed'
         }), 500
 
-@app.route('/api/neural/leak/upload', methods=['POST'])
-def neural_leak_upload():
-    try:
-        if 'file' not in request.files:
-            return jsonify({
-                'status': 'ERROR',
-                'neural_response': 'NO_MONITORING_SOURCE',
-                'message': 'Leak detection requires monitoring source'
-            }), 400
-        
-        file = request.files['file']
-        job_id = f"LEAK_{generate_unique_id()}"
-        
-        filename = secure_filename(file.filename)
-        save_path = f"uploads/{job_id}_{filename}"
-        
-        os.makedirs("uploads", exist_ok=True)
-        file.save(save_path)
-        
-        return jsonify({
-            'status': 'NEURAL_MONITORING',
-            'neural_response': 'LEAK_DETECTION_ACTIVE',
-            'job_id': job_id,
-            'monitoring_status': 'ACTIVE',
-            'sensitivity': 75,
-            'file_path': save_path,
-            'message': 'Neural leak detection monitoring initiated'
-        })
-        
-    except Exception as e:
-        logger.error(f"Neural leak detection error: {str(e)}")
-        return jsonify({
-            'status': 'CRITICAL_ERROR',
-            'neural_response': 'MONITORING_FAILURE',
-            'message': 'Neural monitoring system failure'
-        }), 500
+
 
 ################################################################## 
 # Neural System Status Endpoints
@@ -660,11 +625,6 @@ def download_processed_file(filename):
 ##########################################water leak ##################################################################  
 
 # Enhanced leak detection endpoints (replace your existing ones)
-@app.route('/api/neural/leak/upload', methods=['POST'])
-def neural_leak_upload():
-    """This route is now handled by the WaterLeakage module"""
-    # This will be automatically handled by init_leak_detection_routes()
-    pass
 
 # Add real-time statistics endpoint
 @app.route('/api/neural/leak/realtime-stats')
@@ -673,7 +633,6 @@ def realtime_leak_stats():
     try:
         stats = get_monitoring_stats()
         
-        # Add additional neural-style response format
         return jsonify({
             'status': 'OPERATIONAL',
             'neural_response': 'STATS_RETRIEVED',
@@ -740,7 +699,6 @@ def not_found_error(error):
     return error
 
 # Add startup initialization
-@app.before_first_request
 def initialize_neural_systems():
     """Initialize neural monitoring systems on startup"""
     logger.info("Initializing Neural Leak Detection Systems...")
@@ -759,6 +717,9 @@ if __name__ == '__main__':
         logger.info("Application directories initialized successfully")
     except Exception as e:
         logger.error(f"Error initializing directories: {e}")
+    
+    # Initialize neural systems BEFORE starting the app
+    initialize_neural_systems()
     
     # IMPORTANT: Disable auto-reload to fix Windows socket issues
     print("🚀 Starting Neural Vision Server...")
