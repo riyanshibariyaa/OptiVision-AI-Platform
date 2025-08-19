@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neural Leak Monitor - OptiView Neural Interface</title>
-    
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Open Sans:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <title>Neural Leak Detection System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -16,27 +14,38 @@
         }
 
         body {
-            font-family: 'Rajdhani', sans-serif;
-            background: #000000;
-            color: #0066FF;
-            overflow-x: hidden;
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a1a2e 50%, #16213e 100%);
             min-height: 100vh;
+            color: #FFFFFF;
+            overflow-x: hidden;
             position: relative;
         }
 
-        /* Cyberpunk Background Effects */
+        /* Background Effects */
         .matrix-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1;
+            background-image: 
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 255, 255, 0.03) 2px,
+                    rgba(0, 255, 255, 0.03) 4px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 255, 255, 0.03) 2px,
+                    rgba(0, 255, 255, 0.03) 4px
+                );
             pointer-events: none;
-            background: 
-                radial-gradient(circle at 25% 25%, rgba(0, 100, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
-                linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+            z-index: -2;
         }
 
         .grid-overlay {
@@ -45,13 +54,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 2;
-            pointer-events: none;
             background-image: 
-                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
             animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: -1;
         }
 
         .scan-line {
@@ -61,22 +70,23 @@
             width: 100%;
             height: 2px;
             background: linear-gradient(90deg, transparent, #0066FF, transparent);
-            z-index: 10;
-            animation: scanLine 4s linear infinite;
+            animation: scanLine 3s linear infinite;
+            pointer-events: none;
+            z-index: 1;
         }
 
-        /* Neural Header */
+        /* Header */
         .neural-header {
-            position: relative;
-            z-index: 100;
             background: rgba(0, 0, 0, 0.8);
-            border-bottom: 2px solid #0066FF;
             backdrop-filter: blur(10px);
+            border-bottom: 2px solid #0066FF;
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 4px 20px rgba(0, 102, 255, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
         .neural-logo {
@@ -88,28 +98,26 @@
         .logo-icon {
             width: 50px;
             height: 50px;
-            border: 2px solid #0066FF;
-            border-radius: 50%;
+            background: linear-gradient(135deg, #0066FF, #00AAFF);
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
-            animation: pulse 2s infinite;
+            font-size: 1.5rem;
+            animation: float 3s ease-in-out infinite;
         }
 
         .logo-text {
-            font-family: 'Open Sans', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: #ffffff;
-            text-shadow: 0 0 10px #0066FF;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0066FF;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
         }
 
         .logo-subtitle {
             font-size: 0.8rem;
-            color: #ffffff;
-            font-weight: 300;
-            letter-spacing: 2px;
+            color: #0066FF;
+            opacity: 0.8;
         }
 
         .back-btn {
@@ -117,10 +125,8 @@
             border: 2px solid #0066FF;
             color: #0066FF;
             padding: 0.8rem 1.5rem;
-            border-radius: 25px;
             text-decoration: none;
-            font-family: 'Open Sans', sans-serif;
-            font-weight: 500;
+            border-radius: 10px;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
@@ -129,42 +135,37 @@
 
         .back-btn:hover {
             background: rgba(0, 255, 255, 0.2);
-            border-color: #0066FF;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-            transform: translateX(-5px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
         }
 
         /* Main Container */
         .neural-container {
-            position: relative;
-            z-index: 50;
-            padding: 2rem;
             max-width: 1400px;
             margin: 0 auto;
+            padding: 2rem;
         }
 
-        /* Leak Monitor Title */
         .monitor-title {
             text-align: center;
             margin-bottom: 3rem;
         }
 
         .monitor-title h1 {
-            font-family: 'Open Sans', sans-serif;
             font-size: 3rem;
-            color: #ffffff;
-            text-shadow: 0 0 20px #0066FF;
+            font-weight: 700;
+            color: #FFFFFF;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
             margin-bottom: 1rem;
-            animation: textGlow 3s ease-in-out infinite alternate;
+            animation: textGlow 2s ease-in-out infinite alternate;
         }
 
         .monitor-title p {
-            font-size: 1.2rem;
-            color: #ffffff;
-            opacity: 0.8;
+            font-size: 1.1rem;
+            color: #0066FF;
+            opacity: 0.9;
         }
 
-        /* Main Interface Grid */
+        /* Interface Grid */
         .interface-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -172,23 +173,16 @@
             margin-bottom: 2rem;
         }
 
-        /* Upload Interface */
         .upload-interface {
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid #0066FF;
             border-radius: 15px;
             padding: 2rem;
-            position: relative;
-            overflow: hidden;
             backdrop-filter: blur(10px);
-            box-shadow: 
-                0 8px 32px rgba(0, 102, 255, 0.2),
-                inset 0 1px 0 rgba(0, 255, 255, 0.1);
         }
 
         .interface-title {
-            font-family: 'Open Sans', sans-serif;
-            font-size: 1.3rem;
+            font-size: 1.5rem;
             color: #0066FF;
             margin-bottom: 2rem;
             display: flex;
@@ -196,73 +190,12 @@
             gap: 0.5rem;
         }
 
-        .neural-dropzone {
-            border: 2px dashed #0066FF;
-            border-radius: 10px;
-            padding: 3rem 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 2rem;
-            position: relative;
-            background: rgba(0, 102, 255, 0.02);
-        }
-
-        .neural-dropzone:hover {
-            border-color: #0066FF;
-            background: rgba(0, 255, 255, 0.05);
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
-        }
-
-        .neural-dropzone.dragover {
-            border-color: #0066FF;
-            background: rgba(0, 255, 255, 0.1);
-            transform: scale(1.02);
-        }
-
-        .dropzone-icon {
-            font-size: 4rem;
-            color: #0066FF;
-            margin-bottom: 1rem;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .dropzone-text {
-            font-family: 'Open Sans', sans-serif;
-            font-size: 1.2rem;
-            color: #ffffff;
-            margin-bottom: 0.5rem;
-        }
-
-        .dropzone-subtext {
-            font-size: 0.9rem;
-            color: #ffffff;
-            opacity: 0.7;
-        }
-
-        /* Monitoring Options */
-        .monitoring-options {
-            background: rgba(0, 102, 255, 0.05);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .option-title {
-            color: #0066FF;
-            font-family: 'Open Sans', sans-serif;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
+        /* Monitoring Modes */
         .monitoring-modes {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 2rem;
         }
 
         .mode-option {
@@ -277,7 +210,7 @@
 
         .mode-option.active {
             background: rgba(0, 255, 255, 0.2);
-            border-color: #0066FF;
+            border-color: #00AAFF;
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
         }
 
@@ -298,6 +231,50 @@
             font-size: 0.9rem;
         }
 
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #0066FF;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover {
+            border-color: #00AAFF;
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #00AAFF;
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #0066FF;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: #0066FF;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            color: #0066FF;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        /* Sensitivity Control */
         .sensitivity-control {
             margin-top: 1rem;
         }
@@ -313,7 +290,7 @@
         }
 
         .value-display {
-            color: #0066FF;
+            color: #00AAFF;
             font-weight: 700;
         }
 
@@ -335,12 +312,12 @@
             height: 20px;
             border-radius: 50%;
             background: #0066FF;
-            border: 2px solid #0066FF;
+            border: 2px solid #00AAFF;
             cursor: pointer;
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
         }
 
-        /* Neural Process Button */
+        /* Process Button */
         .neural-process-btn {
             width: 100%;
             background: linear-gradient(135deg, #0066FF, #00AAFF);
@@ -356,61 +333,66 @@
             position: relative;
             overflow: hidden;
             text-transform: uppercase;
+            margin-top: 1rem;
         }
 
         .neural-process-btn:hover {
-            background: linear-gradient(135deg, #00AAFF, #0066FF);
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
             transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.4);
         }
 
         .neural-process-btn:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
 
-        .neural-process-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
+        /* Webcam Button */
+        .webcam-btn {
             width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00AAFF;
+            color: #00AAFF;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
         }
 
-        .neural-process-btn:hover::before {
-            left: 100%;
+        .webcam-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
         }
 
-        /* Live Feed Interface */
-        .live-feed-interface {
+        /* Video Monitor */
+        .video-monitor {
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid #0066FF;
             border-radius: 15px;
             padding: 2rem;
-            position: relative;
-            overflow: hidden;
             backdrop-filter: blur(10px);
-            box-shadow: 
-                0 8px 32px rgba(0, 255, 255, 0.2),
-                inset 0 1px 0 rgba(0, 255, 255, 0.1);
         }
 
-        .live-feed {
+        .video-feed {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000000;
             min-height: 400px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            position: relative;
-            border: 1px solid #0066FF;
+        }
+
+        .video-stream {
+            width: 100%;
+            height: auto;
+            max-height: 500px;
             border-radius: 10px;
-            background: rgba(0, 255, 255, 0.02);
-            margin-bottom: 1rem;
-            overflow: hidden;
         }
 
         .feed-placeholder {
@@ -419,48 +401,14 @@
         }
 
         .feed-placeholder i {
-            font-size: 5rem;
+            font-size: 4rem;
             margin-bottom: 1rem;
-            opacity: 0.3;
-            animation: float 3s ease-in-out infinite;
+            opacity: 0.6;
         }
 
-        .leak-alert {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(255, 0, 100, 0.2);
-            border: 2px solid #FF0064;
-            color: #FF0064;
-            padding: 0.5rem 1rem;
-            border-radius: 10px;
-            font-family: 'Open Sans', sans-serif;
-            font-weight: 600;
-            display: none;
-            animation: leakPulse 1s infinite;
-        }
-
-        .leak-alert.active {
-            display: block;
-        }
-
-        .feed-video {
-            max-width: 100%;
-            max-height: 400px;
-            border-radius: 10px;
-            border: 2px solid #0066FF;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
-        }
-
-        .neural-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(0, 255, 255, 0.1);
-            border-top: 4px solid #0066FF;
-            border-right: 4px solid #0066FF;
-            border-radius: 50%;
-            animation: neuralSpin 1s linear infinite;
-            margin: 2rem auto;
+        .feed-placeholder p {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
         }
 
         /* Detection Controls */
@@ -469,6 +417,11 @@
             justify-content: center;
             gap: 1rem;
             margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .detection-controls.active {
+            display: flex;
         }
 
         .control-btn {
@@ -483,6 +436,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-weight: 600;
         }
 
         .control-btn:hover {
@@ -495,7 +449,12 @@
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
         }
 
-        /* Monitoring Stats */
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Monitoring Statistics */
         .monitoring-stats {
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid #0066FF;
@@ -545,112 +504,51 @@
         .stat-label {
             color: #0066FF;
             font-size: 0.9rem;
-            font-family: 'Open Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Alert Panel */
-        .alert-panel {
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #0066FF;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-top: 2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .alert-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
+        /* Status Messages */
+        .status-message {
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid #0066FF;
+            border-radius: 10px;
+            padding: 1rem;
             margin-top: 1rem;
+            display: none;
         }
 
-        .alert-card {
-            background: rgba(0, 102, 255, 0.05);
-            border-radius: 15px;
-            padding: 1.5rem;
-            border-left: 4px solid #0066FF;
-            transition: all 0.3s ease;
+        .status-message.success {
+            border-color: #00FF00;
+            background: rgba(0, 255, 0, 0.1);
+            color: #00FF00;
         }
 
-        .alert-card:hover {
-            background: rgba(0, 255, 255, 0.1);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        .status-message.error {
+            border-color: #FF0000;
+            background: rgba(255, 0, 0, 0.1);
+            color: #FF0000;
         }
 
-        .alert-card.warning {
-            border-left-color: #FFAA00;
+        .status-message.warning {
+            border-color: #FFA500;
+            background: rgba(255, 165, 0, 0.1);
+            color: #FFA500;
         }
 
-        .alert-card.critical {
-            border-left-color: #FF0064;
-        }
-
-        .alert-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .alert-icon {
-            font-size: 1.2rem;
-            color: #ffffff;
-        }
-
-        .alert-icon.warning { color: #FFAA00; }
-        .alert-icon.critical { color: #FF0064; }
-
-        .alert-title {
-            color: #ffffff;
-            font-family: 'Open Sans', sans-serif;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .alert-time {
-            color: #ffffff;
-            font-size: 0.8rem;
-            margin-left: auto;
-            font-family: 'Open Sans', sans-serif;
-        }
-
-        .alert-description {
-            color: #ffffff;
-            line-height: 1.5;
-            margin-bottom: 1rem;
-        }
-
-        .alert-location {
-            color: #ffffff;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            font-family: 'Open Sans', sans-serif;
-        }
-        .reset-btn {
-            background: rgba(255, 100, 0, 0.1) !important;
-            border-color: #FF6400 !important;
-            color: #FF6400 !important;
-        }
-
-        .reset-btn:hover {
-            background: rgba(255, 100, 0, 0.2) !important;
-            box-shadow: 0 0 20px rgba(255, 100, 0, 0.5) !important;
+        /* Loading Spinner */
+        .neural-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 255, 255, 0.1);
+            border-top: 4px solid #0066FF;
+            border-right: 4px solid #0066FF;
+            border-radius: 50%;
+            animation: neuralSpin 1s linear infinite;
+            margin: 2rem auto;
         }
 
         /* Animations */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.05); }
-        }
-
-        @keyframes textGlow {
-            0% { text-shadow: 0 0 10px #0066FF; }
-            100% { text-shadow: 0 0 20px #0066FF, 0 0 30px #0066FF; }
-        }
-
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-15px); }
@@ -671,9 +569,9 @@
             100% { transform: rotate(360deg); }
         }
 
-        @keyframes leakPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        @keyframes textGlow {
+            0% { text-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
+            100% { text-shadow: 0 0 30px rgba(0, 255, 255, 1), 0 0 40px #0066FF; }
         }
 
         /* Responsive Design */
@@ -698,7 +596,7 @@
                 flex-direction: column;
             }
             
-            .stats-grid, .alert-grid {
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -740,69 +638,75 @@
             <!-- Upload Interface -->
             <div class="upload-interface">
                 <h2 class="interface-title">
-                    <i class="fas fa-video"></i>
-                    MONITORING SETUP
+                    <i class="fas fa-upload"></i>
+                    VIDEO SOURCE INPUT
                 </h2>
-                
-                <!-- Fixed dropzone with correct ID -->
-                <div class="neural-dropzone" id="dropzone">
-                    <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
-                    <div class="dropzone-text">UPLOAD MONITORING SOURCE</div>
-                    <div class="dropzone-subtext">MP4, AVI, LIVE CAMERA FEED</div>
-                </div>
-                
-                <!-- Fixed file input with correct ID -->
-                <input type="file" id="fileInput" style="display: none;" accept="video/*">
-                
-                <div class="monitoring-options">
-                    <div class="option-title">
-                        <i class="fas fa-cog"></i>
-                        MONITORING MODE
-                    </div>
-                    <div class="monitoring-modes">
-                        <div class="mode-option active" data-mode="realtime">
-                            <i class="fas fa-video mode-icon"></i>
-                            <div class="mode-title">REAL-TIME</div>
-                        </div>
-                        <div class="mode-option" data-mode="batch">
-                            <i class="fas fa-file-video mode-icon"></i>
-                            <div class="mode-title">BATCH ANALYSIS</div>
-                        </div>
-                    </div>
-                    
-                    <div class="sensitivity-control">
-                        <div class="control-label">
-                            <span>DETECTION SENSITIVITY</span>
-                            <span class="value-display" id="sensitivityValue">75%</span>
-                        </div>
-                        <input type="range" class="neural-slider" id="sensitivitySlider" min="25" max="100" value="75">
-                    </div>
-                </div>
-                
-                <button class="neural-process-btn" id="startBtn" disabled>
-                    <i class="fas fa-play"></i>
-                    START MONITORING
-                </button>
-            </div>
-            
 
-            <!-- Live Feed Interface -->
-            <div class="live-feed-interface">
+                <!-- Monitoring Modes -->
+                <div class="monitoring-modes">
+                    <div class="mode-option active" id="uploadMode">
+                        <div class="mode-icon">
+                            <i class="fas fa-file-video"></i>
+                        </div>
+                        <div class="mode-title">VIDEO UPLOAD</div>
+                    </div>
+                    <div class="mode-option" id="webcamMode">
+                        <div class="mode-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="mode-title">LIVE CAMERA</div>
+                    </div>
+                </div>
+
+                <!-- Upload Area -->
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Click or drag video files here</div>
+                    <div class="upload-hint">Supports MP4, AVI, MOV files</div>
+                    <input type="file" id="videoFile" class="file-input" accept="video/*">
+                </div>
+
+                <!-- Webcam Button -->
+                <button class="webcam-btn" id="webcamBtn" style="display: none;">
+                    <i class="fas fa-video"></i> START LIVE MONITORING
+                </button>
+
+                <!-- Sensitivity Control -->
+                <div class="sensitivity-control">
+                    <div class="control-label">
+                        <span>DETECTION SENSITIVITY</span>
+                        <span class="value-display" id="sensitivityValue">75%</span>
+                    </div>
+                    <input type="range" class="neural-slider" id="sensitivitySlider" 
+                           min="25" max="100" value="75" step="5">
+                </div>
+
+                <!-- Process Button -->
+                <button class="neural-process-btn" id="processBtn" disabled>
+                    <i class="fas fa-play"></i> INITIATE NEURAL MONITORING
+                </button>
+
+                <!-- Status Messages -->
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+
+            <!-- Video Monitor -->
+            <div class="video-monitor">
                 <h2 class="interface-title">
                     <i class="fas fa-desktop"></i>
-                    LIVE MONITORING FEED
+                    NEURAL MONITORING FEED
                 </h2>
                 
-                <div class="live-feed" id="liveFeed">
-                    <div class="leak-alert" id="leakAlert">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        LEAK DETECTED!
-                    </div>
-                    <div class="feed-placeholder">
+                <div class="video-feed" id="videoFeed">
+                    <div class="feed-placeholder" id="feedPlaceholder">
                         <i class="fas fa-video"></i>
                         <p>NEURAL MONITORING STANDBY</p>
                         <p>Awaiting video source for leak detection...</p>
                     </div>
+                    <img class="video-stream" id="videoStream" style="display: none;" 
+                         src="/api/neural/leak/stream" alt="Live Video Feed">
                 </div>
                 
                 <div class="detection-controls" id="detectionControls">
@@ -815,17 +719,14 @@
                     <button class="control-btn" id="stopBtn">
                         <i class="fas fa-stop"></i> TERMINATE
                     </button>
-                    <button class="control-btn" id="recordBtn">
-                        <i class="fas fa-record-vinyl"></i> RECORD
-                    </button>
-                    <button class="control-btn reset-btn" id="resetBtn" onclick="resetDetection()">
-                         <i class="fas fa-refresh"></i> RESET
+                    <button class="control-btn" id="resetBtn">
+                        <i class="fas fa-redo"></i> RESET
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Monitoring Statistics -->
+        <!-- Monitoring Statistics
         <div class="monitoring-stats">
             <h2 class="interface-title">
                 <i class="fas fa-chart-line"></i>
@@ -848,778 +749,504 @@
                     <div class="stat-label">SYSTEM UPTIME</div>
                 </div>
                 <div class="stat-card">
-                    <i class="fas fa-thermometer-half stat-icon"></i>
-                    <span class="stat-number" id="avgResponse">2.3s</span>
-                    <div class="stat-label">AVG RESPONSE</div>
+                    <i class="fas fa-tachometer-alt stat-icon"></i>
+                    <span class="stat-number" id="avgResponseTime">0.0s</span>
+                    <div class="stat-label">AVG RESPONSE TIME</div>
                 </div>
-            </div>
-        </div>
-        <div id="alertsContainer" class="neural-alerts">
-            <!-- Alerts will be added here dynamically -->
-        </div>
-
-        <!-- Alert Panel -->
-        <div class="alert-panel">
-            <h2 class="interface-title">
-                <i class="fas fa-bell"></i>
-                NEURAL MONITORING ALERTS
-            </h2>
-            <div class="alert-grid" id="alertGrid">
-                <div class="alert-card">
-                    <div class="alert-header">
-                        <i class="fas fa-info-circle alert-icon"></i>
-                        <span class="alert-title">SYSTEM ONLINE</span>
-                        <span class="alert-time">JUST NOW</span>
-                    </div>
-                    <div class="alert-description">
-                        Neural leak detection system is online and monitoring for infrastructure anomalies.
-                    </div>
-                    <div class="alert-location">
-                        <i class="fas fa-map-marker-alt"></i>
-                        SYSTEM STATUS
-                    </div>
+                
+                <div class="stat-card">
+                    <i class="fas fa-microchip stat-icon"></i>
+                    <span class="stat-number" id="cpuUsage">0%</span>
+                    <div class="stat-label">CPU USAGE</div>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
-    
 
     <script>
-    let selectedFile = null;
-    let monitoringActive = false;
-    let sensitivitySlider = null;
-    let liveFeed = null;
-    let detectionControls = null;
-    let startBtn = null;
-    let leakCount = 0;
-    let uptimeInterval = null;
-    let eventSource = null;
+        // Global variables
+        let isMonitoring = false;
+        let isPaused = false;
+        let currentMode = 'upload';
+        let statsInterval = null;
 
-    // Initialize when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('🚀 Initializing Neural Leak Detection Interface...');
-        initializeInterface();
-        setupEventListeners();
-        connectToRealTimeUpdates();
-    });
+        // DOM elements
+        const uploadMode = document.getElementById('uploadMode');
+        const webcamMode = document.getElementById('webcamMode');
+        const uploadArea = document.getElementById('uploadArea');
+        const webcamBtn = document.getElementById('webcamBtn');
+        const videoFile = document.getElementById('videoFile');
+        const processBtn = document.getElementById('processBtn');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityValue = document.getElementById('sensitivityValue');
+        const statusMessage = document.getElementById('statusMessage');
+        const detectionControls = document.getElementById('detectionControls');
+        const videoStream = document.getElementById('videoStream');
+        const feedPlaceholder = document.getElementById('feedPlaceholder');
+        
+        // Control buttons
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
 
-    function initializeInterface() {
-        console.log('🔧 Setting up interface elements...');
-        
-        // Get DOM elements with error checking
-        sensitivitySlider = document.getElementById('sensitivitySlider');
-        liveFeed = document.getElementById('liveFeed');
-        detectionControls = document.getElementById('detectionControls');
-        startBtn = document.getElementById('startBtn');
-        
-        if (!sensitivitySlider) console.error('❌ sensitivitySlider element not found');
-        if (!liveFeed) console.error('❌ liveFeed element not found');
-        if (!startBtn) console.error('❌ startBtn element not found');
-        
-        // Initialize sensitivity display
-        updateSensitivityDisplay();
-        
-        // Initialize stats with safe checks
-        updateActiveMonitors(0);
-        updateLeaksDetected(0);
-        updateSystemUptime('00:00:00');
-        updateAvgResponse('2.3s');
-        
-        console.log('✅ Interface initialized');
-    }
+        // Stats elements
+        const activeMonitors = document.getElementById('activeMonitors');
+        const leaksDetected = document.getElementById('leaksDetected');
+        const uptime = document.getElementById('uptime');
+        const avgResponseTime = document.getElementById('avgResponseTime');
+        const neuralConfidence = document.getElementById('neuralConfidence');
+        const cpuUsage = document.getElementById('cpuUsage');
 
-    function setupEventListeners() {
-        console.log('🔗 Setting up event listeners...');
-        
-        // File input handling with error checking
-        const fileInput = document.getElementById('fileInput');
-        const dropzone = document.getElementById('dropzone');
-        
-        if (fileInput) {
-            fileInput.addEventListener('change', handleFileSelect);
-            console.log('✅ File input event listener added');
-        } else {
-            console.error('❌ File input element not found!');
+        // Initialize the interface
+        function init() {
+            console.log('Initializing Neural Leak Detection Interface...');
+            
+            // Mode switching
+            uploadMode.addEventListener('click', () => switchMode('upload'));
+            webcamMode.addEventListener('click', () => switchMode('webcam'));
+            
+            // File upload
+            uploadArea.addEventListener('click', () => videoFile.click());
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('drop', handleDrop);
+            videoFile.addEventListener('change', handleFileSelect);
+            
+            // Webcam
+            webcamBtn.addEventListener('click', startWebcamMonitoring);
+            
+            // Process button
+            processBtn.addEventListener('click', startVideoMonitoring);
+            
+            // Sensitivity slider
+            sensitivitySlider.addEventListener('input', updateSensitivity);
+            
+            // Control buttons
+            pauseBtn.addEventListener('click', pauseMonitoring);
+            resumeBtn.addEventListener('click', resumeMonitoring);
+            stopBtn.addEventListener('click', stopMonitoring);
+            resetBtn.addEventListener('click', resetMonitoring);
+            
+            // Start stats updates
+            startStatsUpdates();
+            
+            console.log('Interface initialized successfully');
         }
-        
-        if (dropzone) {
-            dropzone.addEventListener('click', function() {
-                console.log('📁 Dropzone clicked');
-                fileInput?.click();
+
+        // Mode switching
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            uploadMode.classList.toggle('active', mode === 'upload');
+            webcamMode.classList.toggle('active', mode === 'webcam');
+            
+            uploadArea.style.display = mode === 'upload' ? 'block' : 'none';
+            webcamBtn.style.display = mode === 'webcam' ? 'block' : 'none';
+            
+            // Reset process button
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-play"></i> INITIATE NEURAL MONITORING';
+        }
+
+        // File handling
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect({ target: { files: files } });
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                console.log('File selected:', file.name);
+                processBtn.disabled = false;
+                processBtn.innerHTML = `<i class="fas fa-play"></i> START MONITORING: ${file.name}`;
+                showStatus(`File selected: ${file.name}`, 'success');
+            }
+        }
+
+        // Sensitivity control
+        function updateSensitivity() {
+            const value = sensitivitySlider.value;
+            sensitivityValue.textContent = `${value}%`;
+            
+            // Update sensitivity if monitoring is active
+            if (isMonitoring) {
+                fetch('/api/neural/leak/sensitivity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sensitivity: parseInt(value) })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Sensitivity updated:', data);
+                })
+                .catch(error => {
+                    console.error('Error updating sensitivity:', error);
+                });
+            }
+        }
+
+        // Start webcam monitoring
+        function startWebcamMonitoring() {
+            console.log('Starting webcam monitoring...');
+            showStatus('Initializing webcam monitoring...', 'warning');
+            
+            const sensitivity = parseInt(sensitivitySlider.value);
+            
+            fetch('/api/neural/leak/webcam', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    sensitivity: sensitivity,
+                    camera_index: 0 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Webcam monitoring response:', data);
+                
+                if (data.status === 'NEURAL_MONITORING') {
+                    startMonitoringUI();
+                    showStatus('Webcam monitoring active', 'success');
+                } else {
+                    showStatus(`Error: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error starting webcam monitoring:', error);
+                showStatus('Failed to start webcam monitoring', 'error');
             });
-            dropzone.addEventListener('dragover', handleDragOver);
-            dropzone.addEventListener('dragleave', handleDragLeave);
-            dropzone.addEventListener('drop', handleFileDrop);
-            console.log('✅ Dropzone event listeners added');
-        } else {
-            console.error('❌ Dropzone element not found!');
         }
-        
-        // Sensitivity slider
-        if (sensitivitySlider) {
-            sensitivitySlider.addEventListener('input', updateSensitivityDisplay);
-            sensitivitySlider.addEventListener('change', updateDetectionSensitivity);
-            console.log('✅ Sensitivity slider event listeners added');
-        }
-        
-        // Control buttons with safe checks
-        const buttons = [
-            { id: 'startBtn', handler: toggleMonitoring },
-            { id: 'pauseBtn', handler: pauseMonitoring },
-            { id: 'resumeBtn', handler: resumeMonitoring },
-            { id: 'terminateBtn', handler: stopMonitoring },
-            { id: 'recordBtn', handler: toggleRecording }
-        ];
-        
-        buttons.forEach(({ id, handler }) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.addEventListener('click', handler);
-                console.log(`✅ ${id} event listener added`);
-            }
-        });
-    }
 
-    function handleFileSelect(event) {
-        const file = event.target.files[0];
-        console.log('📁 File selected:', file ? file.name : 'none');
-        
-        if (file) {
-            // Validate file type
-            const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv'];
-            if (!validTypes.includes(file.type) && !file.name.match(/\.(mp4|avi|mov|wmv)$/i)) {
-                addAlert('error', 'INVALID FILE', 'Please select a valid video file (MP4, AVI, MOV, WMV)');
+        // Start video file monitoring
+        function startVideoMonitoring() {
+            const fileInput = document.getElementById('videoFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('Please select a video file first', 'error');
                 return;
             }
+
+            console.log('Starting video monitoring...');
+            showStatus('Uploading and processing video...', 'warning');
             
-            // Check file size (limit to 100MB)
-            if (file.size > 100 * 1024 * 1024) {
-                addAlert('error', 'FILE TOO LARGE', 'File size must be less than 100MB');
-                return;
-            }
-            
-            processSelectedFile(file);
-        }
-    }
-
-    function handleDragOver(event) {
-        event.preventDefault();
-        event.currentTarget.classList.add('dragover');
-    }
-
-    function handleDragLeave(event) {
-        event.preventDefault();
-        event.currentTarget.classList.remove('dragover');
-    }
-
-    function handleFileDrop(event) {
-        event.preventDefault();
-        event.currentTarget.classList.remove('dragover');
-        
-        const files = event.dataTransfer.files;
-        console.log('📁 Files dropped:', files.length);
-        
-        if (files.length > 0) {
-            handleFileSelect({ target: { files: files } });
-        }
-    }
-
-    function processSelectedFile(file) {
-        selectedFile = file;
-        console.log('✅ Processing selected file:', file.name);
-        
-        // Update UI to show selected file
-        const dropzone = document.getElementById('dropzone');
-        if (dropzone) {
-            dropzone.innerHTML = `
-                <div class="dropzone-icon">
-                    <i class="fas fa-video" style="color: #00FF00;"></i>
-                </div>
-                <div class="dropzone-text">FILE LOADED: ${file.name}</div>
-                <div class="dropzone-subtext">Ready for neural monitoring • ${(file.size / (1024*1024)).toFixed(1)}MB</div>
-            `;
-        }
-        
-        // Enable start button
-        if (startBtn) {
-            startBtn.disabled = false;
-            startBtn.style.opacity = '1';
-            console.log('✅ Start button enabled');
-        }
-        
-        addAlert('success', 'FILE LOADED', `Video source "${file.name}" ready for monitoring.`);
-    }
-
-    async function toggleMonitoring() {
-        console.log('🎬 Toggle monitoring - currently active:', monitoringActive);
-        
-        if (monitoringActive) {
-            await stopMonitoring();
-        } else {
-            await startMonitoring();
-        }
-    }
-
-    async function startMonitoring() {
-        if (!selectedFile) {
-            addAlert('error', 'NO SOURCE', 'Please select a video file for monitoring.');
-            return;
-        }
-        
-        console.log('🚀 Starting monitoring with file:', selectedFile.name);
-        
-        try {
-            // Show loading state
-            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING...';
-            startBtn.disabled = true;
-            
-            // Prepare form data
             const formData = new FormData();
-            formData.append('file', selectedFile);
+            formData.append('file', file);
             formData.append('sensitivity', sensitivitySlider.value);
             
-            console.log('📤 Uploading file...');
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
             
-            // Upload file and start monitoring
-            const response = await fetch('/api/neural/leak/upload', {
+            fetch('/api/neural/leak/upload', {
                 method: 'POST',
                 body: formData
-            });
-            
-            console.log('📥 Response status:', response.status);
-            
-            const result = await response.json();
-            console.log('📥 Response data:', result);
-            
-            if (response.ok && result.status === 'NEURAL_MONITORING') {
-                // Monitoring started successfully
-                monitoringActive = true;
-                updateUIForActiveMonitoring();
-                startVideoStream();
-                addAlert('success', 'MONITORING ACTIVE', result.message);
-                console.log('✅ Monitoring started successfully');
-                
-            } else {
-                throw new Error(result.message || 'Failed to start monitoring');
-            }
-            
-        } catch (error) {
-            console.error('❌ Error starting monitoring:', error);
-            addAlert('error', 'MONITORING FAILED', error.message);
-            
-            // Reset UI
-            startBtn.innerHTML = '<i class="fas fa-play"></i> START MONITORING';
-            startBtn.disabled = false;
-        }
-    }
-
-    function updateUIForActiveMonitoring() {
-        // Update start button
-        startBtn.innerHTML = '<i class="fas fa-stop"></i> STOP MONITORING';
-        startBtn.disabled = false;
-        
-        // Show detection controls if they exist
-        if (detectionControls) {
-            detectionControls.style.display = 'flex';
-        }
-        
-        // Update active monitors
-        updateActiveMonitors(1);
-        
-        // Start uptime counter
-        startUptimeCounter();
-    }
-
-    function startVideoStream() {
-        if (!liveFeed) {
-            console.error('❌ Live feed element not found');
-            return;
-        }
-        
-        console.log('📺 Starting video stream...');
-        
-        // Display live video feed
-        liveFeed.innerHTML = `
-            <div class="leak-alert" id="leakAlert">
-                <i class="fas fa-exclamation-triangle"></i>
-                LEAK DETECTED!
-            </div>
-            <img src="/api/neural/leak/stream?t=${Date.now()}" 
-                style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;"
-                alt="Live Feed"
-                onerror="handleStreamError(this)">
-            <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px;">
-                <i class="fas fa-circle" style="color: #00FF00; animation: pulse 1s infinite;"></i>
-                LIVE NEURAL MONITORING
-            </div>
-        `;
-    }
-
-    function handleStreamError(img) {
-        console.error('❌ Video stream error');
-        
-        // Hide the broken image
-        img.style.display = 'none';
-        
-        // Show fallback content
-        const fallback = document.createElement('div');
-        fallback.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #0066FF;">
-                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                <div>STREAM UNAVAILABLE</div>
-                <div style="font-size: 0.8rem; opacity: 0.7;">Neural processing active in background</div>
-            </div>
-        `;
-        img.parentNode.appendChild(fallback);
-    }
-
-    // ... (rest of the functions remain the same as in the previous version)
-
-    function updateSensitivityDisplay() {
-        const value = sensitivitySlider?.value || 75;
-        const display = document.getElementById('sensitivityValue');
-        if (display) {
-            display.textContent = `${value}%`;
-        }
-    }
-
-    function addAlert(type, title, message) {
-        const alertsContainer = document.getElementById('alertsContainer');
-        if (!alertsContainer) {
-            // Create alerts container if it doesn't exist
-            const container = document.createElement('div');
-            container.id = 'alertsContainer';
-            container.className = 'neural-alerts';
-            container.style.cssText = `
-                position: fixed;
-                top: 100px;
-                right: 20px;
-                z-index: 1000;
-                max-width: 400px;
-            `;
-            document.body.appendChild(container);
-        }
-        
-        const container = document.getElementById('alertsContainer');
-        const alert = document.createElement('div');
-        alert.className = `neural-alert ${type}`;
-        alert.style.cssText = `
-            background: rgba(0, 0, 0, 0.9);
-            border: 2px solid ${type === 'error' ? '#FF0064' : type === 'success' ? '#00FF00' : '#0066FF'};
-            color: white;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 8px;
-            animation: slideIn 0.3s ease;
-        `;
-        
-        const iconMap = {
-            'success': 'check-circle',
-            'error': 'exclamation-triangle', 
-            'info': 'info-circle',
-            'critical': 'exclamation-triangle'
-        };
-        
-        const currentTime = new Date().toLocaleTimeString();
-        
-        alert.innerHTML = `
-            <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                <i class="fas fa-${iconMap[type] || 'info-circle'}" style="margin-top: 0.2rem;"></i>
-                <div>
-                    <div style="font-weight: bold; margin-bottom: 0.25rem;">${title}</div>
-                    <div style="margin-bottom: 0.25rem;">${message}</div>
-                    <div style="font-size: 0.8rem; opacity: 0.7;">SYSTEM STATUS • ${currentTime}</div>
-                </div>
-            </div>
-        `;
-        
-        container.insertBefore(alert, container.firstChild);
-        
-        // Remove old alerts (keep only last 5)
-        const alerts = container.children;
-        while (alerts.length > 5) {
-            container.removeChild(alerts[alerts.length - 1]);
-        }
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (alert.parentNode) {
-                alert.parentNode.removeChild(alert);
-            }
-        }, 5000);
-    }
-
-    // Utility functions for updating stats (with safe checks)
-    function updateActiveMonitors(count) {
-        const element = document.querySelector('[data-stat="active-monitors"]');
-        if (element) element.textContent = count;
-    }
-
-    function updateLeaksDetected(count) {
-        const element = document.querySelector('[data-stat="leaks-detected"]');
-        if (element) element.textContent = count;
-        leakCount = count;
-    }
-
-    function updateSystemUptime(uptime) {
-        const element = document.querySelector('[data-stat="system-uptime"]');
-        if (element) element.textContent = uptime;
-    }
-
-    function updateAvgResponse(response) {
-        const element = document.querySelector('[data-stat="avg-response"]');
-        if (element) element.textContent = response;
-    }
-
-    function connectToRealTimeUpdates() {
-        // Simplified real-time updates - can be expanded later
-        console.log('🔄 Setting up real-time updates...');
-    }
-
-    function startUptimeCounter() {
-        const startTime = Date.now();
-        
-        uptimeInterval = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            const hours = Math.floor(elapsed / 3600000);
-            const minutes = Math.floor((elapsed % 3600000) / 60000);
-            const seconds = Math.floor((elapsed % 60000) / 1000);
-            
-            const uptimeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            updateSystemUptime(uptimeStr);
-        }, 1000);
-    }
-    async function resetDetection() {
-        try {
-            console.log('🔄 Resetting detection history...');
-            
-            const response = await fetch('/api/neural/leak/reset', {
-                method: 'POST'
-            });
-            
-            const result = await response.json();
-            
-            if (response.ok) {
-                addAlert('info', 'DETECTION RESET', 'Detection history and leak count have been reset.');
-                
-                // Reset UI leak count
-                updateLeaksDetected(0);
-                
-                console.log('✅ Detection reset successful');
-            } else {
-                throw new Error(result.message || 'Reset failed');
-            }
-            
-        } catch (error) {
-            console.error('❌ Error resetting detection:', error);
-            addAlert('error', 'RESET FAILED', error.message);
-        }
-    }
-
-    // Also add this improved stop monitoring function that resets detection
-    async function stopMonitoring() {
-    console.log('🛑 Stopping monitoring...');
-    
-    try {
-        // Call the stop endpoint
-        const response = await fetch('/api/neural/leak/stop', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        const result = await response.json();
-        console.log('Stop response:', result);
-        
-        if (response.ok) {
-            // Update global state
-            monitoringActive = false;
-            
-            // Clear intervals
-            if (uptimeInterval) {
-                clearInterval(uptimeInterval);
-                uptimeInterval = null;
-            }
-            
-            if (statsUpdateInterval) {
-                clearInterval(statsUpdateInterval);
-                statsUpdateInterval = null;
-            }
-            
-            // Reset UI elements
-            resetUIAfterStop();
-            
-            addAlert('info', 'MONITORING STOPPED', 'Neural leak detection has been terminated.');
-            console.log('✅ Monitoring stopped successfully');
-            
-        } else {
-            throw new Error(result.message || 'Failed to stop monitoring');
-        }
-        
-    } catch (error) {
-        console.error('❌ Error stopping monitoring:', error);
-        addAlert('error', 'STOP FAILED', error.message);
-        
-        // Force UI reset even if API call failed
-        resetUIAfterStop();
-    }
-}
-
-function resetUIAfterStop() {
-    // Reset live feed
-    if (liveFeed) {
-        liveFeed.innerHTML = `
-            <div class="feed-placeholder">
-                <i class="fas fa-video" style="color: #0066FF;"></i>
-                <p style="color: #0066FF;">NEURAL MONITORING STANDBY</p>
-                <p style="color: #0066FF;">Ready for next video source...</p>
-            </div>
-        `;
-    }
-    
-    // Hide detection controls
-    if (detectionControls) {
-        detectionControls.style.display = 'none';
-    }
-    
-    // Reset start button
-    if (startBtn) {
-        startBtn.innerHTML = '<i class="fas fa-play"></i> START MONITORING';
-        startBtn.disabled = selectedFile ? false : true;
-    }
-    
-    // Reset statistics
-    updateActiveMonitors(0);
-    updateSystemUptime('00:00:00');
-    
-    console.log('🔄 UI reset completed');
-}
-
-// Improved statistics updates with real API calls
-function startStatsUpdates() {
-    // Clear any existing interval
-    if (statsUpdateInterval) {
-        clearInterval(statsUpdateInterval);
-    }
-    
-    // Update stats every 2 seconds
-    statsUpdateInterval = setInterval(async () => {
-        if (!monitoringActive) {
-            clearInterval(statsUpdateInterval);
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/neural/leak/stats');
-            if (response.ok) {
-                const stats = await response.json();
-                
-                // Update UI with real stats
-                updateActiveMonitors(stats.active_monitors);
-                updateLeaksDetected(stats.leaks_detected);
-                updateSystemUptime(stats.uptime);
-                updateAvgResponse(stats.avg_response_time);
-                
-                // Update frame count if available
-                if (stats.frame_count) {
-                    updateFrameCount(stats.frame_count);
-                }
-                
-            }
-        } catch (error) {
-            console.error('Error updating stats:', error);
-        }
-    }, 2000);
-}
-
-function updateFrameCount(count) {
-    // Add frame count display if it doesn't exist
-    let frameElement = document.querySelector('[data-stat="frame-count"]');
-    if (!frameElement) {
-        // You can add this element to your HTML or create it dynamically
-        console.log(`Frame count: ${count}`);
-    } else {
-        frameElement.textContent = count;
-    }
-}
-
-// Enhanced start monitoring function
-async function startMonitoring() {
-    if (!selectedFile) {
-        addAlert('error', 'NO SOURCE', 'Please select a video file for monitoring.');
-        return;
-    }
-    
-    console.log('🚀 Starting monitoring with file:', selectedFile.name);
-    
-    try {
-        // Show loading state
-        startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INITIALIZING...';
-        startBtn.disabled = true;
-        
-        // Prepare form data
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('sensitivity', sensitivitySlider.value);
-        
-        console.log('📤 Uploading file...');
-        
-        // Upload file and start monitoring
-        const response = await fetch('/api/neural/leak/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        console.log('📥 Response status:', response.status);
-        
-        const result = await response.json();
-        console.log('📥 Response data:', result);
-        
-        if (response.ok && result.status === 'NEURAL_MONITORING') {
-            // Monitoring started successfully
-            monitoringActive = true;
-            updateUIForActiveMonitoring();
-            startVideoStream();
-            startStatsUpdates(); // Start real statistics updates
-            addAlert('success', 'MONITORING ACTIVE', result.message);
-            console.log('✅ Monitoring started successfully');
-            
-        } else {
-            throw new Error(result.message || 'Failed to start monitoring');
-        }
-        
-    } catch (error) {
-        console.error('❌ Error starting monitoring:', error);
-        addAlert('error', 'MONITORING FAILED', error.message);
-        
-        // Reset UI
-        startBtn.innerHTML = '<i class="fas fa-play"></i> START MONITORING';
-        startBtn.disabled = false;
-    }
-}
-
-// Add these missing utility functions if they don't exist
-function updateActiveMonitors(count) {
-    const element = document.querySelector('[data-stat="active-monitors"]') || 
-                   document.getElementById('activeMonitors');
-    if (element) element.textContent = count;
-}
-
-function updateLeaksDetected(count) {
-    const element = document.querySelector('[data-stat="leaks-detected"]') || 
-                   document.getElementById('leaksDetected');
-    if (element) element.textContent = count;
-    leakCount = count;
-}
-
-function updateSystemUptime(uptime) {
-    const element = document.querySelector('[data-stat="system-uptime"]') || 
-                   document.getElementById('systemUptime');
-    if (element) element.textContent = uptime;
-}
-
-function updateAvgResponse(response) {
-    const element = document.querySelector('[data-stat="avg-response"]') || 
-                   document.getElementById('avgResponse');
-    if (element) element.textContent = response;
-}
-
-// Enhanced sensitivity update with immediate effect
-async function updateDetectionSensitivity() {
-    if (!monitoringActive) return;
-    
-    try {
-        const response = await fetch('/api/neural/leak/sensitivity', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                sensitivity: parseInt(sensitivitySlider.value)
             })
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-            addAlert('info', 'SENSITIVITY UPDATED', result.message);
-            console.log('✅ Sensitivity updated to', sensitivitySlider.value + '%');
+            .then(response => response.json())
+            .then(data => {
+                console.log('Upload response:', data);
+                
+                if (data.status === 'NEURAL_MONITORING') {
+                    startMonitoringUI();
+                    showStatus('Video monitoring initiated successfully', 'success');
+                } else {
+                    showStatus(`Error: ${data.message}`, 'error');
+                    processBtn.disabled = false;
+                    processBtn.innerHTML = '<i class="fas fa-play"></i> INITIATE NEURAL MONITORING';
+                }
+            })
+            .catch(error => {
+                console.error('Error uploading video:', error);
+                showStatus('Failed to upload video', 'error');
+                processBtn.disabled = false;
+                processBtn.innerHTML = '<i class="fas fa-play"></i> INITIATE NEURAL MONITORING';
+            });
         }
-        
-    } catch (error) {
-        console.error('❌ Error updating sensitivity:', error);
-    }
-}
 
-// Enhanced reset function
-async function resetDetection() {
-    try {
-        console.log('🔄 Resetting detection history...');
-        
-        const response = await fetch('/api/neural/leak/reset', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+        // Start monitoring UI
+        function startMonitoringUI() {
+            isMonitoring = true;
+            isPaused = false;
+            
+            // Show video stream
+            feedPlaceholder.style.display = 'none';
+            videoStream.style.display = 'block';
+            
+            // Show controls
+            detectionControls.classList.add('active');
+            
+            // Update button states
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-eye"></i> MONITORING ACTIVE';
+            
+            // Add timestamp to video stream URL to force refresh
+            videoStream.src = `/api/neural/leak/stream?t=${Date.now()}`;
+            
+            console.log('Monitoring UI started');
+        }
+
+        // Pause monitoring
+        function pauseMonitoring() {
+            if (!isMonitoring || isPaused) return;
+            
+            console.log('Pausing monitoring...');
+            isPaused = true;
+            
+            // Update UI
+            pauseBtn.style.display = 'none';
+            resumeBtn.style.display = 'inline-flex';
+            
+            // Hide video stream
+            videoStream.style.display = 'none';
+            feedPlaceholder.style.display = 'flex';
+            feedPlaceholder.innerHTML = `
+                <i class="fas fa-pause"></i>
+                <p>MONITORING PAUSED</p>
+                <p>Click RESUME to continue...</p>
+            `;
+            
+            showStatus('Monitoring paused', 'warning');
+        }
+
+        // Resume monitoring
+        function resumeMonitoring() {
+            if (!isMonitoring || !isPaused) return;
+            
+            console.log('Resuming monitoring...');
+            isPaused = false;
+            
+            // Update UI
+            resumeBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-flex';
+            
+            // Show video stream
+            feedPlaceholder.style.display = 'none';
+            videoStream.style.display = 'block';
+            videoStream.src = `/api/neural/leak/stream?t=${Date.now()}`;
+            
+            showStatus('Monitoring resumed', 'success');
+        }
+
+        // Stop monitoring
+        function stopMonitoring() {
+            if (!isMonitoring) return;
+            
+            console.log('Stopping monitoring...');
+            
+            fetch('/api/neural/leak/stop', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Stop response:', data);
+                stopMonitoringUI();
+                showStatus('Monitoring terminated', 'success');
+            })
+            .catch(error => {
+                console.error('Error stopping monitoring:', error);
+                stopMonitoringUI();
+                showStatus('Monitoring stopped (with errors)', 'warning');
+            });
+        }
+
+        // Stop monitoring UI
+        function stopMonitoringUI() {
+            isMonitoring = false;
+            isPaused = false;
+            
+            // Hide video stream and controls
+            videoStream.style.display = 'none';
+            detectionControls.classList.remove('active');
+            
+            // Show placeholder
+            feedPlaceholder.style.display = 'flex';
+            feedPlaceholder.innerHTML = `
+                <i class="fas fa-video"></i>
+                <p>NEURAL MONITORING STANDBY</p>
+                <p>Awaiting video source for leak detection...</p>
+            `;
+            
+            // Reset buttons
+            processBtn.disabled = currentMode === 'upload' ? !videoFile.files[0] : false;
+            processBtn.innerHTML = '<i class="fas fa-play"></i> INITIATE NEURAL MONITORING';
+            
+            pauseBtn.style.display = 'inline-flex';
+            resumeBtn.style.display = 'none';
+            
+            console.log('Monitoring UI stopped');
+        }
+
+        // Reset monitoring (reset leak counter)
+        function resetMonitoring() {
+            console.log('Resetting monitoring...');
+            
+            fetch('/api/neural/leak/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Reset response:', data);
+                showStatus('Leak counter reset', 'success');
+                updateStats(); // Force stats update
+            })
+            .catch(error => {
+                console.error('Error resetting monitoring:', error);
+                showStatus('Failed to reset counter', 'error');
+            });
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // Start statistics updates
+        function startStatsUpdates() {
+            // Initial update
+            updateStats();
+            
+            // Update every 2 seconds
+            statsInterval = setInterval(updateStats, 2000);
+        }
+
+        // Update statistics
+        function updateStats() {
+            fetch('/api/neural/leak/stats')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Stats updated:', data);
+                    
+                    // Check if it's the enhanced stats format
+                    if (data.monitoring_data) {
+                        // Enhanced format from app.py
+                        activeMonitors.textContent = data.monitoring_data.active_monitors;
+                        leaksDetected.textContent = data.monitoring_data.leaks_detected;
+                        uptime.textContent = data.monitoring_data.system_uptime;
+                        avgResponseTime.textContent = data.monitoring_data.avg_response_time;
+                        neuralConfidence.textContent = data.monitoring_data.neural_confidence || '95%';
+                        cpuUsage.textContent = data.system_health?.cpu_usage || '45%';
+                    } else {
+                        // Basic format from WaterLeakage.py
+                        activeMonitors.textContent = data.active_monitors || 0;
+                        leaksDetected.textContent = data.leaks_detected || 0;
+                        uptime.textContent = data.uptime || '00:00:00';
+                        avgResponseTime.textContent = data.avg_response_time || '0.0s';
+                        neuralConfidence.textContent = '95%'; // Default
+                        cpuUsage.textContent = '45%'; // Default
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating stats:', error);
+                    // Set default values on error
+                    activeMonitors.textContent = isMonitoring ? '1' : '0';
+                    neuralConfidence.textContent = '95%';
+                    cpuUsage.textContent = '45%';
+                });
+        }
+
+        // Handle video stream errors
+        function handleVideoError() {
+            console.log('Video stream error detected');
+            videoStream.style.display = 'none';
+            feedPlaceholder.style.display = 'flex';
+            feedPlaceholder.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>VIDEO STREAM ERROR</p>
+                <p>Attempting to reconnect...</p>
+            `;
+            
+            // Try to reconnect after 3 seconds
+            setTimeout(() => {
+                if (isMonitoring && !isPaused) {
+                    videoStream.src = `/api/neural/leak/stream?t=${Date.now()}`;
+                    videoStream.style.display = 'block';
+                    feedPlaceholder.style.display = 'none';
+                }
+            }, 3000);
+        }
+
+        // Add error handler to video stream
+        document.addEventListener('DOMContentLoaded', function() {
+            videoStream.addEventListener('error', handleVideoError);
+            videoStream.addEventListener('load', function() {
+                console.log('Video stream loaded successfully');
+            });
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (statsInterval) {
+                clearInterval(statsInterval);
+            }
+            if (isMonitoring) {
+                fetch('/api/neural/leak/stop', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(() => {}); // Ignore errors on page unload
             }
         });
-        
-        const result = await response.json();
-        
-        if (response.ok) {
-            addAlert('info', 'DETECTION RESET', 'Detection history and leak count have been reset.');
-            
-            // Reset UI leak count immediately
-            updateLeaksDetected(0);
-            
-            console.log('✅ Detection reset successful');
-        } else {
-            throw new Error(result.message || 'Reset failed');
-        }
-        
-    } catch (error) {
-        console.error('❌ Error resetting detection:', error);
-        addAlert('error', 'RESET FAILED', error.message);
-    }
-}
 
-// Make sure these event listeners are properly attached
-document.addEventListener('DOMContentLoaded', function() {
-    // Reattach event listeners for buttons that might not be working
-    const terminateBtn = document.getElementById('terminateBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    
-    if (terminateBtn) {
-        terminateBtn.addEventListener('click', stopMonitoring);
-        console.log('✅ Terminate button event listener attached');
-    }
-    
-    if (resetBtn) {
-        resetBtn.addEventListener('click', resetDetection);
-        console.log('✅ Reset button event listener attached');
-    }
-    
-    // Also attach to buttons that might be created dynamically
-    document.addEventListener('click', function(event) {
-        if (event.target.id === 'terminateBtn' || event.target.closest('#terminateBtn')) {
-            stopMonitoring();
-        }
-        if (event.target.id === 'resetBtn' || event.target.closest('#resetBtn')) {
-            resetDetection();
-        }
-    });
-});
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', init);
 
-console.log('🔧 Enhanced monitoring controls loaded');
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case ' ': // Ctrl+Space to pause/resume
+                        e.preventDefault();
+                        if (isMonitoring) {
+                            if (isPaused) {
+                                resumeMonitoring();
+                            } else {
+                                pauseMonitoring();
+                            }
+                        }
+                        break;
+                    case 's': // Ctrl+S to stop
+                        e.preventDefault();
+                        if (isMonitoring) {
+                            stopMonitoring();
+                        }
+                        break;
+                    case 'r': // Ctrl+R to reset
+                        e.preventDefault();
+                        if (isMonitoring) {
+                            resetMonitoring();
+                        }
+                        break;
+                }
+            }
+        });
 
-    // Additional stub functions to prevent errors
-    function pauseMonitoring() { console.log('Pause monitoring'); }
-    function resumeMonitoring() { console.log('Resume monitoring'); }
-    function stopMonitoring() { console.log('Stop monitoring'); monitoringActive = false; }
-    function toggleRecording() { console.log('Toggle recording'); }
-    function updateDetectionSensitivity() { console.log('Update sensitivity'); }
-
-    console.log('✅ Neural Leak Detection JavaScript loaded');
+        console.log('Neural Leak Detection System Loaded');
     </script>
 </body>
 </html>
