@@ -6,7 +6,7 @@
     <title>OptiView - Neural Vision Interface</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Open Sans:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         * {
@@ -18,7 +18,7 @@
         body {
             font-family: 'Rajdhani', sans-serif;
             background: #000000;
-            color: #0066FF;
+            color: #FFFFFF;
             overflow-x: hidden;
             min-height: 100vh;
             position: relative;
@@ -60,7 +60,7 @@
             left: 0;
             width: 100%;
             height: 2px;
-            background: linear-gradient(90deg, transparent, #0066FF, transparent);
+            background: linear-gradient(90deg, transparent, #FFFFFF, transparent);
             z-index: 10;
             animation: scanLine 4s linear infinite;
         }
@@ -88,7 +88,7 @@
         .logo-icon {
             width: 50px;
             height: 50px;
-            border: 2px solid #0066ff;
+            border: 2px solid #FFFFFF;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -98,17 +98,17 @@
         }
 
         .logo-text {
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Orbitron', monospace;
             font-size: 2rem;
             font-weight: 900;
-            color: #ffffff;
-            text-shadow: 0 0 10px #0066FF;
+            color: #FFFFFF;
+            text-shadow: 0 0 10px #FFFFFF;
             animation: textGlow 3s ease-in-out infinite alternate;
         }
 
         .logo-subtitle {
             font-size: 0.9rem;
-            color: #ffffff;
+            color: #0066FF;
             font-weight: 300;
             letter-spacing: 2px;
         }
@@ -133,7 +133,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #0066FF;
+            background: #FFFFFF;
             animation: pulse 1.5s infinite;
         }
 
@@ -146,7 +146,7 @@
             margin: 0 auto;
         }
 
-        /* Neural Network Visualization */
+        /* Neural Network Visualization - ENHANCED VERSION */
         .neural-network {
             background: rgba(0, 0, 0, 0.7);
             border: 2px solid #0066FF;
@@ -162,82 +162,158 @@
         }
 
         .network-title {
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Orbitron', monospace;
             font-size: 1.5rem;
-            color: #0066FF;
+            color: #FFFFFF;
             margin-bottom: 2rem;
             text-align: center;
-            text-shadow: 0 0 10px #0066FF;
+            text-shadow: 0 0 10px #FFFFFF;
         }
 
-        .hexagon-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 3rem;
-            justify-items: center;
-            margin: 2rem 0;
+        /* Enhanced Neural Network Styles */
+        .neural-network-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem;
+            background: radial-gradient(circle at center, rgba(0, 255, 255, 0.03) 0%, transparent 70%);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .network-layer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            z-index: 10;
+        }
+
+        .layer-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+            color: #0066FF;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
         }
 
         .neural-node {
             position: relative;
+            width: 80px;
+            height: 80px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .hexagon {
-            width: 150px;
-            height: 130px;
-            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1) 0%, rgba(0, 255, 255, 0.05) 100%);
+        .node-core {
+            width: 100%;
+            height: 100%;
             border: 2px solid #0066FF;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, rgba(0, 102, 255, 0.05) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .neural-node:hover .hexagon {
-            transform: scale(1.1);
-            border-color: #ffffff;
-            background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(0, 102, 255, 0.1) 100%);
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
-        }
-
-        .hexagon-content {
-            text-align: center;
-            padding: 1rem;
-        }
-
-        .node-icon {
-            font-size: 2rem;
-            color: #ffffff;
-            margin-bottom: 0.5rem;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .node-title {
-            font-family: 'Open Sans', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 700;
+            font-size: 1.8rem;
             color: #FFFFFF;
-            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(10px);
         }
 
-        .node-features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.2rem;
-            justify-content: center;
+        .node-pulse {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border: 2px solid #FFFFFF;
+            border-radius: 50%;
+            opacity: 0;
+            animation: nodePulse 2s ease-in-out infinite;
         }
 
-        .feature-tag {
-            background: rgba(0, 255, 255, 0.1);
-            border: 1px solid #0066FF;
-            padding: 0.1rem 0.3rem;
-            border-radius: 8px;
-            font-size: 0.6rem;
+        .node-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.7rem;
             color: #0066FF;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .node-status {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.6rem;
+            color: #4fd1c7;
+            background: rgba(0, 255, 255, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 8px;
+            border: 1px solid #4fd1c7;
+        }
+
+        /* Node Hover Effects */
+        .neural-node:hover {
+            transform: scale(1.1);
+        }
+
+        .neural-node:hover .node-core {
+            border-color: #FFFFFF;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.2) 0%, rgba(0, 102, 255, 0.1) 100%);
+        }
+
+        .neural-node:hover .node-pulse {
+            animation: nodePulse 1s ease-in-out infinite;
+        }
+
+        /* Input Nodes */
+        .input-node .node-core {
+            border-color: #4fd1c7;
+            background: radial-gradient(circle, rgba(79, 209, 199, 0.1) 0%, transparent 100%);
+        }
+
+        .input-node:hover .node-core {
+            border-color: #4fd1c7;
+            box-shadow: 0 0 25px rgba(79, 209, 199, 0.5);
+        }
+
+        /* Processing Nodes */
+        .processing-node {
+            width: 60px;
+            height: 60px;
+        }
+
+        .processing-node .node-core {
+            border-color: #0066FF;
+            background: radial-gradient(circle, rgba(0, 102, 255, 0.15) 0%, transparent 100%);
+            font-size: 1.4rem;
+        }
+
+        .processing-node:hover .node-core {
+            box-shadow: 0 0 20px rgba(0, 102, 255, 0.5);
+        }
+
+        /* Output Nodes */
+        .output-node .node-core {
+            border-color: #FFFFFF;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, rgba(0, 102, 255, 0.05) 100%);
+        }
+
+        .output-node:hover .node-core {
+            border-color: #FFFFFF;
+            box-shadow: 0 0 35px rgba(0, 255, 255, 0.7);
         }
 
         /* Neural Connections */
@@ -255,8 +331,37 @@
             stroke: #0066FF;
             stroke-width: 2;
             stroke-dasharray: 5, 5;
-            animation: dataFlow 3s linear infinite;
             opacity: 0.6;
+            animation: dataFlow 3s linear infinite;
+        }
+
+        .connection-line.active {
+            stroke: #FFFFFF;
+            stroke-width: 3;
+            opacity: 1;
+            animation: dataFlow 1.5s linear infinite;
+            filter: drop-shadow(0 0 5px #FFFFFF);
+        }
+
+        /* Data Particles */
+        .data-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .data-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #FFFFFF;
+            opacity: 0;
         }
 
         /* Terminal Interface */
@@ -293,7 +398,7 @@
         .dot-green { background: #00FF00; }
 
         .terminal-title {
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Orbitron', monospace;
             color: #FFFFFF;
             font-size: 0.9rem;
             margin-left: 1rem;
@@ -307,14 +412,14 @@
         }
 
         .terminal-line {
-            font-family: 'Rajdhani', sans-serif;
+            font-family: 'Rajdhani', monospace;
             font-size: 0.9rem;
             margin-bottom: 0.3rem;
             animation: typewriter 0.5s ease-in;
         }
 
         .terminal-prompt {
-            color: #ffffff;
+            color: #FFFFFF;
         }
 
         .terminal-output {
@@ -322,7 +427,7 @@
         }
 
         .terminal-cursor {
-            background: #0066FF;
+            background: #FFFFFF;
             animation: blink 1s infinite;
         }
 
@@ -346,7 +451,7 @@
         }
 
         .metric-card:hover {
-            border-color: #0066FF;
+            border-color: #FFFFFF;
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
         }
 
@@ -364,11 +469,11 @@
         }
 
         .metric-value {
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Orbitron', monospace;
             font-size: 2rem;
             font-weight: 700;
-            color: #ffffff;
-            text-shadow: 0 0 10px #0066FF;
+            color: #FFFFFF;
+            text-shadow: 0 0 10px #FFFFFF;
             animation: counterUp 2s ease-out;
         }
 
@@ -409,7 +514,7 @@
         }
 
         .neural-button:hover {
-            border-color: #0066FF;
+            border-color: #FFFFFF;
             background: linear-gradient(135deg, rgba(0, 255, 255, 0.2) 0%, rgba(0, 102, 255, 0.1) 100%);
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
             transform: translateY(-5px);
@@ -427,7 +532,7 @@
         }
 
         .button-text h3 {
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Orbitron', monospace;
             font-size: 1.2rem;
             margin-bottom: 0.5rem;
             color: #0066FF;
@@ -446,8 +551,8 @@
         }
 
         @keyframes textGlow {
-            0% { text-shadow: 0 0 10px #0066FF; }
-            100% { text-shadow: 0 0 20px #0066FF, 0 0 30px #0066FF; }
+            0% { text-shadow: 0 0 10px #FFFFFF; }
+            100% { text-shadow: 0 0 20px #FFFFFF, 0 0 30px #0066FF; }
         }
 
         @keyframes float {
@@ -485,6 +590,47 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        @keyframes nodePulse {
+            0% {
+                opacity: 0;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.4);
+            }
+        }
+
+        @keyframes particleMove {
+            0% {
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes burstEffect {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .neural-header {
@@ -497,62 +643,36 @@
                 gap: 1rem;
             }
             
-            .hexagon-grid {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 2rem;
+            .neural-network-container {
+                height: 400px;
+                padding: 1rem;
             }
             
-            .hexagon {
-                width: 120px;
-                height: 104px;
+            .network-layer {
+                gap: 1rem;
+            }
+            
+            .neural-node {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .node-core {
+                font-size: 1.4rem;
+            }
+            
+            .processing-node {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .processing-node .node-core {
+                font-size: 1rem;
             }
             
             .neural-container {
                 padding: 1rem;
             }
-        }
-
-        /* Glitch Effects */
-        .glitch {
-            position: relative;
-        }
-
-        .glitch::before,
-        .glitch::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .glitch::before {
-            animation: glitch1 2s infinite;
-            color: #FF0000;
-            z-index: -1;
-        }
-
-        .glitch::after {
-            animation: glitch2 2s infinite;
-            color: #0066FF;
-            z-index: -2;
-        }
-
-        @keyframes glitch1 {
-            0%, 100% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-        }
-
-        @keyframes glitch2 {
-            0%, 100% { transform: translate(0); }
-            20% { transform: translate(2px, -2px); }
-            40% { transform: translate(2px, 2px); }
-            60% { transform: translate(-2px, -2px); }
-            80% { transform: translate(-2px, 2px); }
         }
     </style>
 </head>
@@ -569,7 +689,7 @@
                 <i class="fas fa-eye"></i>
             </div>
             <div>
-                <div class="logo-text glitch" data-text="OptiView">OptiView</div>
+                <div class="logo-text">OptiView</div>
                 <div class="logo-subtitle">NEURAL VISION INTERFACE</div>
             </div>
         </div>
@@ -592,69 +712,128 @@
 
     <!-- Main Neural Container -->
     <div class="neural-container">
-        <!-- Neural Network Visualization -->
+        <!-- Enhanced Neural Network Visualization -->
         <div class="neural-network">
             <h2 class="network-title">NEURAL NETWORK TOPOLOGY</h2>
             
-            <!-- Hexagonal Nodes -->
-            <div class="hexagon-grid">
-                <div class="neural-node" onclick="launchNeural('blur')">
-                    <div class="hexagon">
-                        <div class="hexagon-content">
-                            <i class="fas fa-shield-alt node-icon"></i>
-                            <div class="node-title">PRIVACY SHIELD</div>
-                            <div class="node-features">
-                                
-                            </div>
+            <!-- Advanced Neural Network Container -->
+            <div class="neural-network-container">
+                <!-- Input Layer -->
+                <div class="network-layer input-layer">
+                    <div class="layer-label">INPUT LAYER</div>
+                    <div class="neural-node input-node" data-type="image">
+                        <div class="node-core">
+                            <i class="fas fa-image"></i>
                         </div>
+                        <div class="node-label">IMAGE</div>
+                        <div class="node-pulse"></div>
+                    </div>
+                    <div class="neural-node input-node" data-type="video">
+                        <div class="node-core">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="node-label">VIDEO</div>
+                        <div class="node-pulse"></div>
+                    </div>
+                    <div class="neural-node input-node" data-type="document">
+                        <div class="node-core">
+                            <i class="fas fa-file"></i>
+                        </div>
+                        <div class="node-label">DOCS</div>
+                        <div class="node-pulse"></div>
                     </div>
                 </div>
 
-                <div class="neural-node" onclick="launchNeural('detect')">
-                    <div class="hexagon">
-                        <div class="hexagon-content">
-                            <i class="fas fa-search node-icon"></i>
-                            <div class="node-title">OBJECT DETECT</div>
-                            <div class="node-features">
-                                
-                            </div>
+                <!-- Hidden Layer -->
+                <div class="network-layer hidden-layer">
+                    <div class="layer-label">PROCESSING LAYER</div>
+                    <div class="neural-node processing-node" data-id="proc1">
+                        <div class="node-core">
+                            <i class="fas fa-microchip"></i>
                         </div>
+                        <div class="node-pulse"></div>
+                    </div>
+                    <div class="neural-node processing-node" data-id="proc2">
+                        <div class="node-core">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="node-pulse"></div>
+                    </div>
+                    <div class="neural-node processing-node" data-id="proc3">
+                        <div class="node-core">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <div class="node-pulse"></div>
+                    </div>
+                    <div class="neural-node processing-node" data-id="proc4">
+                        <div class="node-core">
+                            <i class="fas fa-cpu"></i>
+                        </div>
+                        <div class="node-pulse"></div>
+                    </div>
+                    <div class="neural-node processing-node" data-id="proc5">
+                        <div class="node-core">
+                            <i class="fas fa-memory"></i>
+                        </div>
+                        <div class="node-pulse"></div>
                     </div>
                 </div>
 
-                <div class="neural-node" onclick="launchNeural('ocr')">
-                    <div class="hexagon">
-                        <div class="hexagon-content">
-                            <i class="fas fa-file-text node-icon"></i>
-                            <div class="node-title">OCR ENGINE</div>
-                            <div class="node-features">
-                                
-                            </div>
+                <!-- Output Layer -->
+                <div class="network-layer output-layer">
+                    <div class="layer-label">OUTPUT LAYER</div>
+                    <div class="neural-node output-node" onclick="launchNeural('blur')" data-module="privacy">
+                        <div class="node-core">
+                            <i class="fas fa-shield-alt"></i>
                         </div>
+                        <div class="node-label">PRIVACY SHIELD</div>
+                        <div class="node-pulse"></div>
+                        <!-- <div class="node-status">READY</div> -->
+                    </div>
+                    <div class="neural-node output-node" onclick="launchNeural('detect')" data-module="detection">
+                        <div class="node-core">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="node-label">OBJECT DETECT</div>
+                        <div class="node-pulse"></div>
+                        <!-- <div class="node-status">READY</div> -->
+                    </div>
+                    <div class="neural-node output-node" onclick="launchNeural('ocr')" data-module="ocr">
+                        <div class="node-core">
+                            <i class="fas fa-file-text"></i>
+                        </div>
+                        <div class="node-label">OCR ENGINE</div>
+                        <div class="node-pulse"></div>
+                        <!-- <div class="node-status">READY</div> -->
+                    </div>
+                    <div class="neural-node output-node" onclick="launchNeural('leak')" data-module="leak">
+                        <div class="node-core">
+                            <i class="fas fa-tint"></i>
+                        </div>
+                        <div class="node-label">LEAK MONITOR</div>
+                        <div class="node-pulse"></div>
+                        <!-- <div class="node-status">READY</div> -->
                     </div>
                 </div>
 
-                <div class="neural-node" onclick="launchNeural('leak')">
-                    <div class="hexagon">
-                        <div class="hexagon-content">
-                            <i class="fas fa-tint node-icon"></i>
-                            <div class="node-title">LEAK MONITOR</div>
-                            <div class="node-features">
-                               
-                            </div>
-                        </div>
-                    </div>
+                <!-- Neural Connections -->
+                <svg class="neural-connections">
+                    <!-- Input to Hidden connections -->
+                    <g class="connection-group input-to-hidden">
+                        <!-- Will be populated by JavaScript -->
+                    </g>
+                    
+                    <!-- Hidden to Output connections -->
+                    <g class="connection-group hidden-to-output">
+                        <!-- Will be populated by JavaScript -->
+                    </g>
+                </svg>
+
+                <!-- Data Particles -->
+                <div class="data-particles">
+                    <!-- Particles will be generated by JavaScript -->
                 </div>
             </div>
-
-            <!-- Neural Connections SVG -->
-            <svg class="neural-connections">
-                <line class="connection-line" x1="25%" y1="50%" x2="50%" y2="30%" />
-                <line class="connection-line" x1="50%" y1="30%" x2="75%" y2="50%" />
-                <line class="connection-line" x1="25%" y1="50%" x2="50%" y2="70%" />
-                <line class="connection-line" x1="75%" y1="50%" x2="50%" y2="70%" />
-                <line class="connection-line" x1="25%" y1="50%" x2="75%" y2="50%" />
-            </svg>
         </div>
 
         <!-- Neural Terminal -->
@@ -776,6 +955,240 @@
     </div>
 
     <script>
+        // Enhanced Neural Network Animation System
+        class NeuralNetworkVisualizer {
+            constructor() {
+                this.container = document.querySelector('.neural-network-container');
+                this.svg = document.querySelector('.neural-connections');
+                this.particleContainer = document.querySelector('.data-particles');
+                this.inputNodes = document.querySelectorAll('.input-node');
+                this.processingNodes = document.querySelectorAll('.processing-node');
+                this.outputNodes = document.querySelectorAll('.output-node');
+                this.connections = [];
+                this.particles = [];
+                this.activeConnections = new Set();
+                
+                this.init();
+            }
+            
+            init() {
+                this.createConnections();
+                this.startDataFlow();
+                this.setupInteractions();
+            }
+            
+            createConnections() {
+                const inputGroup = this.svg.querySelector('.input-to-hidden');
+                const outputGroup = this.svg.querySelector('.hidden-to-output');
+                
+                // Create input to processing connections
+                this.inputNodes.forEach((inputNode, i) => {
+                    this.processingNodes.forEach((procNode, j) => {
+                        const line = this.createConnectionLine(inputNode, procNode, `input-${i}-proc-${j}`);
+                        inputGroup.appendChild(line);
+                        this.connections.push({
+                            line: line,
+                            from: inputNode,
+                            to: procNode,
+                            type: 'input-processing'
+                        });
+                    });
+                });
+                
+                // Create processing to output connections
+                this.processingNodes.forEach((procNode, i) => {
+                    this.outputNodes.forEach((outputNode, j) => {
+                        const line = this.createConnectionLine(procNode, outputNode, `proc-${i}-output-${j}`);
+                        outputGroup.appendChild(line);
+                        this.connections.push({
+                            line: line,
+                            from: procNode,
+                            to: outputNode,
+                            type: 'processing-output'
+                        });
+                    });
+                });
+            }
+            
+            createConnectionLine(fromNode, toNode, id) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                const fromPos = this.getNodePosition(fromNode);
+                const toPos = this.getNodePosition(toNode);
+                
+                line.setAttribute('x1', fromPos.x);
+                line.setAttribute('y1', fromPos.y);
+                line.setAttribute('x2', toPos.x);
+                line.setAttribute('y2', toPos.y);
+                line.setAttribute('class', 'connection-line');
+                line.setAttribute('id', id);
+                
+                return line;
+            }
+            
+            getNodePosition(node) {
+                const rect = node.getBoundingClientRect();
+                const containerRect = this.container.getBoundingClientRect();
+                
+                return {
+                    x: rect.left + rect.width / 2 - containerRect.left,
+                    y: rect.top + rect.height / 2 - containerRect.top
+                };
+            }
+            
+            startDataFlow() {
+                setInterval(() => {
+                    this.generateDataParticle();
+                }, 800);
+                
+                setInterval(() => {
+                    this.activateRandomConnection();
+                }, 2000);
+            }
+            
+            generateDataParticle() {
+                const randomInput = this.inputNodes[Math.floor(Math.random() * this.inputNodes.length)];
+                const randomOutput = this.outputNodes[Math.floor(Math.random() * this.outputNodes.length)];
+                
+                // Create particle path through processing layer
+                const randomProcessing = this.processingNodes[Math.floor(Math.random() * this.processingNodes.length)];
+                
+                this.createParticle(randomInput, randomProcessing, randomOutput);
+            }
+            
+            createParticle(startNode, midNode, endNode) {
+                const particle = document.createElement('div');
+                particle.className = 'data-particle';
+                this.particleContainer.appendChild(particle);
+                
+                const startPos = this.getNodePosition(startNode);
+                const midPos = this.getNodePosition(midNode);
+                const endPos = this.getNodePosition(endNode);
+                
+                // Animate particle through the network
+                this.animateParticle(particle, [startPos, midPos, endPos]);
+            }
+            
+            animateParticle(particle, positions) {
+                let currentStep = 0;
+                const totalSteps = positions.length - 1;
+                const stepDuration = 1500; // ms per step
+                
+                const animate = () => {
+                    if (currentStep >= totalSteps) {
+                        particle.remove();
+                        return;
+                    }
+                    
+                    const from = positions[currentStep];
+                    const to = positions[currentStep + 1];
+                    
+                    particle.style.left = from.x + 'px';
+                    particle.style.top = from.y + 'px';
+                    particle.style.opacity = '1';
+                    
+                    particle.animate([
+                        { left: from.x + 'px', top: from.y + 'px' },
+                        { left: to.x + 'px', top: to.y + 'px' }
+                    ], {
+                        duration: stepDuration,
+                        easing: 'ease-in-out'
+                    }).finished.then(() => {
+                        currentStep++;
+                        animate();
+                    });
+                };
+                
+                animate();
+            }
+            
+            activateRandomConnection() {
+                // Deactivate all connections
+                this.connections.forEach(conn => {
+                    conn.line.classList.remove('active');
+                });
+                
+                // Activate random connections
+                const numActive = Math.floor(Math.random() * 3) + 2;
+                const randomConnections = this.connections
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, numActive);
+                
+                randomConnections.forEach(conn => {
+                    conn.line.classList.add('active');
+                });
+                
+                setTimeout(() => {
+                    randomConnections.forEach(conn => {
+                        conn.line.classList.remove('active');
+                    });
+                }, 2000);
+            }
+            
+            setupInteractions() {
+                // Node hover effects
+                [...this.inputNodes, ...this.processingNodes, ...this.outputNodes].forEach(node => {
+                    node.addEventListener('mouseenter', () => {
+                        this.highlightNodeConnections(node);
+                    });
+                    
+                    node.addEventListener('mouseleave', () => {
+                        this.clearHighlights();
+                    });
+                });
+                
+                // Output node clicks
+                this.outputNodes.forEach(node => {
+                    node.addEventListener('click', () => {
+                        this.triggerNodeActivation(node);
+                    });
+                });
+            }
+            
+            highlightNodeConnections(node) {
+                this.connections.forEach(conn => {
+                    if (conn.from === node || conn.to === node) {
+                        conn.line.classList.add('active');
+                    }
+                });
+            }
+            
+            clearHighlights() {
+                this.connections.forEach(conn => {
+                    conn.line.classList.remove('active');
+                });
+            }
+            
+            triggerNodeActivation(node) {
+                // Create burst effect
+                const burst = document.createElement('div');
+                burst.style.cssText = `
+                    position: absolute;
+                    width: 100px;
+                    height: 100px;
+                    border: 2px solid #FFFFFF;
+                    border-radius: 50%;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    pointer-events: none;
+                    animation: burstEffect 0.6s ease-out forwards;
+                `;
+                
+                node.appendChild(burst);
+                
+                setTimeout(() => {
+                    burst.remove();
+                }, 600);
+                
+                // Trigger data flow from this node
+                this.createParticle(
+                    this.inputNodes[0], 
+                    this.processingNodes[0], 
+                    node
+                );
+            }
+        }
+
         // Terminal typing animation
         const commands = [
             "status --neural-network",
@@ -816,9 +1229,6 @@
             }
         }
 
-        // Start typing animation
-        setTimeout(typeCommand, 1000);
-
         // Real-time metrics updates
         function updateMetrics() {
             // Update neural pathways
@@ -843,19 +1253,28 @@
         // Launch neural modules
         function launchNeural(module) {
             // Add glitch effect
-            const node = event.currentTarget;
-            node.style.filter = 'hue-rotate(180deg)';
+            const moduleMap = {
+                'blur': 'privacy',
+                'detect': 'detection', 
+                'ocr': 'ocr',
+                'leak': 'leak'
+            };
             
-            setTimeout(() => {
-                node.style.filter = 'none';
-                window.location.href = `/neural-${module}`;
-            }, 200);
+            const targetNode = document.querySelector(`[data-module="${moduleMap[module]}"]`);
+            if (targetNode) {
+                targetNode.style.filter = 'hue-rotate(180deg)';
+                
+                setTimeout(() => {
+                    targetNode.style.filter = 'none';
+                    window.location.href = `/neural-${module}`;
+                }, 200);
+            }
         }
 
         // Add terminal command on click
         document.addEventListener('click', function(e) {
             if (e.target.closest('.neural-node')) {
-                const module = e.target.closest('.neural-node').querySelector('.node-title').textContent;
+                const module = e.target.closest('.neural-node').querySelector('.node-label')?.textContent || 'NEURAL MODULE';
                 addTerminalLine(`LAUNCHING: ${module} neural module...`);
             }
         });
@@ -876,6 +1295,13 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize neural network visualizer
+            new NeuralNetworkVisualizer();
+            
+            // Start typing animation
+            setTimeout(typeCommand, 1000);
+            
+            // Start metrics updates
             updateMetrics();
             setInterval(updateMetrics, 3000);
             
