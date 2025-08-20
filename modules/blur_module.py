@@ -34,36 +34,69 @@ processing_state = {
 # Initialize models
 face_model = None
 plate_model = None
+models_loaded = False
 
 def initialize_models():
-    """Initialize YOLOv8 models for face and license plate detection"""
-    global face_model, plate_model
+    """Initialize YOLOv8 models for face and license plate detection - LAZY LOADING"""
+    global face_model, plate_model, models_loaded
     
-    try:
-        # Initialize YOLOv8 models
-        # For face detection, we'll use a pre-trained model and filter for 'person' class
-        face_model = YOLO('yolov8n.pt')
+    if models_loaded:
+        return True
         
-        # For license plate detection, we'll use the same model and look for specific patterns
-        # You can replace this with a custom trained license plate model
+    try:
+        logger.info("Loading YOLO models on demand...")
+        from ultralytics import YOLO
+        
+        # Initialize YOLOv8 models (nano version for memory efficiency)
+        face_model = YOLO('yolov8n.pt')
         plate_model = YOLO('yolov8n.pt')
         
+        models_loaded = True
         logger.info("Models initialized successfully")
         return True
     except Exception as e:
         logger.error(f"Error initializing models: {e}")
         try:
             # Fallback to YOLOv5 if YOLOv8 fails
+            import torch
             face_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
             plate_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+            models_loaded = True
             logger.info("Fallback to YOLOv5 models successful")
             return True
         except Exception as e2:
             logger.error(f"Error loading fallback models: {e2}")
             return False
+        
+# def initialize_models():
+#     """Initialize YOLOv8 models for face and license plate detection"""
+#     global face_model, plate_model
+    
+#     try:
+#         # Initialize YOLOv8 models
+#         # For face detection, we'll use a pre-trained model and filter for 'person' class
+#         face_model = YOLO('yolov8n.pt')
+        
+#         # For license plate detection, we'll use the same model and look for specific patterns
+#         # You can replace this with a custom trained license plate model
+#         plate_model = YOLO('yolov8n.pt')
+        
+#         logger.info("Models initialized successfully")
+#         return True
+#     except Exception as e:
+#         logger.error(f"Error initializing models: {e}")
+#         try:
+#             # Fallback to YOLOv5 if YOLOv8 fails
+#             face_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+#             plate_model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+#             logger.info("Fallback to YOLOv5 models successful")
+#             return True
+#         except Exception as e2:
+#             logger.error(f"Error loading fallback models: {e2}")
+#             return False
 
 # Initialize models on module load
-models_loaded = initialize_models()
+# models_loaded = initialize_models()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
@@ -194,9 +227,16 @@ def detect_license_plates(image, model, confidence_threshold=0.3):
         logger.error(f"Error in license plate detection: {e}")
         
     return detections
-
-def process_image_with_blur(image, face_model, plate_model, blur_intensity='25', detect_faces_flag=True, detect_plates_flag=True, show_boxes=False):
-    """Process image with face and plate detection and blurring"""
+def process_image_with_blur(image, face_model_param, plate_model_param, blur_intensity='25', detect_faces_flag=True, detect_plates_flag=True, show_boxes=False):
+    """Process image with face and plate detection and blurring - WITH LAZY LOADING"""
+    global face_model, plate_model, models_loaded
+    
+    # LAZY LOAD MODELS WHEN ACTUALLY NEEDED
+    if not models_loaded:
+        if not initialize_models():
+            logger.error("Failed to load detection models")
+            return image, []  # Return original image if models fail to load
+    
     output = image.copy()
     all_detections = []
     
@@ -235,6 +275,46 @@ def process_image_with_blur(image, face_model, plate_model, blur_intensity='25',
         
     return output, all_detections
 
+# def process_image_with_blur(image, face_model, plate_model, blur_intensity='25', detect_faces_flag=True, detect_plates_flag=True, show_boxes=False):
+#     """Process image with face and plate detection and blurring"""
+#     output = image.copy()
+#     all_detections = []
+    
+#     try:
+#         # Face detection
+#         if detect_faces_flag and face_model:
+#             face_detections = detect_faces(image, face_model)
+            
+#             # Apply blur to faces
+#             for detection in face_detections:
+#                 x1, y1, x2, y2, confidence, cls = detection
+#                 if confidence > 0.3:
+#                     output = blur_region(output, 
+#                                       (int(x1), int(y1), int(x2-x1), int(y2-y1)), 
+#                                       blur_intensity)
+#                     all_detections.append(detection)
+        
+#         # License plate detection
+#         if detect_plates_flag and plate_model:
+#             plate_detections = detect_license_plates(image, plate_model)
+            
+#             # Apply blur to plates
+#             for detection in plate_detections:
+#                 x1, y1, x2, y2, confidence, cls = detection
+#                 output = blur_region(output, 
+#                                   (int(x1), int(y1), int(x2-x1), int(y2-y1)), 
+#                                   blur_intensity)
+#                 all_detections.append(detection)
+        
+#         # Draw boxes if requested
+#         if show_boxes and len(all_detections) > 0:
+#             output = draw_boxes(output, all_detections)
+            
+#     except Exception as e:
+#         logger.error(f"Error processing image: {e}")
+        
+#     return output, all_detections
+
 def encode_image(image):
     """Convert OpenCV image to base64 string"""
     _, buffer = cv2.imencode('.jpg', image)
@@ -249,7 +329,15 @@ def index():
 
 @blur_bp.route('/upload', methods=['POST'])
 def upload_files():
-    """Handle file uploads"""
+    """Handle file uploads with lazy model loading"""
+    global models_loaded
+    
+    # LAZY LOAD MODELS WHEN UPLOAD HAPPENS
+    if not models_loaded:
+        logger.info("Loading models for upload processing...")
+        if not initialize_models():
+            return jsonify({'error': 'Failed to load detection models'}), 500
+    
     if 'files[]' not in request.files:
         return jsonify({'error': 'No files uploaded'}), 400
     
@@ -272,8 +360,12 @@ def upload_files():
 @blur_bp.route('/process-stream')
 def process_stream():
     """Stream processing of uploaded images with real-time updates"""
+    global models_loaded
+    
+    # LAZY LOAD MODELS WHEN NEEDED
     if not models_loaded:
-        return jsonify({'error': 'Models not loaded properly'}), 500
+        if not initialize_models():
+            return jsonify({'error': 'Failed to load models'}), 500
         
     blur_intensity = request.args.get('blurIntensity', '25')
     session_id = request.args.get('sessionId')
@@ -363,7 +455,16 @@ def process_stream():
         yield f"data: {json.dumps({'processing_complete': True})}\n\n"
 
     return Response(generate(), mimetype='text/event-stream')
-
+  
+def get_model_status():
+    """Get current model loading status"""
+    global models_loaded
+    return {
+        'models_loaded': models_loaded,
+        'face_model_available': face_model is not None,
+        'plate_model_available': plate_model is not None
+    }
+  
 # API endpoint for neural_blur.html integration
 @blur_bp.route('/api/neural/blur/upload', methods=['POST'])
 def neural_blur_upload():
