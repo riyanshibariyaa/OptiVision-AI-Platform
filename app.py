@@ -918,6 +918,42 @@ def get_detection_status(job_id):
             'neural_response': 'STATUS_CHECK_FAILED',
             'message': str(e)
         }), 500
+@app.route('/api/debug/detection')
+def debug_detection():
+    """Debug endpoint to test detection without file upload"""
+    try:
+        from modules.object_detection.object_detection import ObjectDetector
+        
+        # Create test image
+        test_img = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
+        
+        # Add some clear shapes
+        cv2.rectangle(test_img, (50, 50), (150, 150), (255, 0, 0), -1)
+        cv2.rectangle(test_img, (200, 200), (300, 300), (0, 255, 0), -1)
+        cv2.circle(test_img, (400, 100), 50, (0, 0, 255), -1)
+        
+        # Save test image
+        test_path = "uploads/debug_test.jpg"
+        cv2.imwrite(test_path, test_img)
+        
+        # Test detection
+        detector = ObjectDetector()
+        results = detector.detect_objects(test_path)
+        
+        return jsonify({
+            'status': 'success',
+            'test_image_path': test_path,
+            'detections': len(results),
+            'results': results,
+            'message': f'Debug test completed. Found {len(results)} objects.'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 ################################################################## 
 if __name__ == '__main__':

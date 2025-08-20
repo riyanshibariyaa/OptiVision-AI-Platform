@@ -760,366 +760,373 @@
         </div>
     </div>
 
+
+
     <script>
-        // Replace the existing JavaScript section in your neural_detect.html with these fixes
-// Only the JavaScript functionality is changed - no CSS or HTML structure changes
+        let selectedFile = null;
+        let isVideoProcessing = false;
 
+        // DOM Elements - using YOUR ACTUAL IDs from the HTML
+        const fileInput = document.getElementById('neuralFileInput');  // YOUR ACTUAL ID
+        const dropzone = document.querySelector('.neural-dropzone');    // YOUR ACTUAL CLASS
+        const processBtn = document.getElementById('processBtn');
+        const neuralProgress = document.getElementById('neuralProgress');
+        const progressFill = document.getElementById('progressFill');
+        const resultsArea = document.getElementById('resultsArea');
+        const confidenceSlider = document.getElementById('confidenceSlider');
+        const confidenceValue = document.getElementById('confidenceValue');
+        const modelSelect = document.getElementById('modelSelect');
 
-    let selectedFile = null;
-    let isVideoProcessing = false;
+        // Add click handler to dropzone since you use onclick in HTML
+        dropzone.addEventListener('click', () => fileInput.click());
 
-    // DOM Elements - keep your existing IDs
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
-    const processBtn = document.getElementById('processBtn');
-    const neuralProgress = document.getElementById('neuralProgress');
-    const progressFill = document.getElementById('progressFill');
-    const resultsArea = document.getElementById('resultsArea');
-    const resultsContent = document.getElementById('resultsContent');
-    const confidenceSlider = document.getElementById('confidenceSlider');
-    const confidenceValue = document.getElementById('confidenceValue');
+        // Event Listeners
+        fileInput.addEventListener('change', handleFileSelect);
+        dropzone.addEventListener('dragover', handleDragOver);
+        dropzone.addEventListener('dragleave', handleDragLeave);
+        dropzone.addEventListener('drop', handleDrop);
+        processBtn.addEventListener('click', initiateDetection);
+        confidenceSlider.addEventListener('input', updateConfidence);
 
-    // Event Listeners - unchanged
-    dropzone.addEventListener('click', () => fileInput.click());
-    dropzone.addEventListener('dragover', handleDragOver);
-    dropzone.addEventListener('dragleave', handleDragLeave);
-    dropzone.addEventListener('drop', handleDrop);
-    fileInput.addEventListener('change', handleFileSelect);
-    processBtn.addEventListener('click', initiateDetection);
-    confidenceSlider.addEventListener('input', updateConfidence);
-
-    function handleFileSelect(event) {
-        const files = event.target.files;
-        if (files.length > 0) {
-            selectedFile = files[0];
-            updateDropzone(files[0]);
-            processBtn.disabled = false;
-        }
-    }
-
-    function updateDropzone(file) {
-        const icon = dropzone.querySelector('.dropzone-icon');
-        const text = dropzone.querySelector('.dropzone-text');
-        const subtext = dropzone.querySelector('.dropzone-subtext');
-        
-        // Keep existing styling, only update content
-        icon.className = file.type.startsWith('video/') ? 
-            'fas fa-video dropzone-icon' : 'fas fa-image dropzone-icon';
-        text.textContent = `TARGET: ${file.name}`;
-        subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB • READY FOR NEURAL ANALYSIS`;
-        
-        isVideoProcessing = file.type.startsWith('video/');
-    }
-
-    function updateConfidence() {
-        confidenceValue.textContent = confidenceSlider.value + '%';
-    }
-
-    function handleDragOver(event) {
-        event.preventDefault();
-        dropzone.classList.add('dragover');
-    }
-
-    function handleDragLeave() {
-        dropzone.classList.remove('dragover');
-    }
-
-    function handleDrop(event) {
-        event.preventDefault();
-        dropzone.classList.remove('dragover');
-        
-        const files = event.dataTransfer.files;
-        if (files.length > 0) {
-            selectedFile = files[0];
-            fileInput.files = files;
-            updateDropzone(files[0]);
-            processBtn.disabled = false;
-        }
-    }
-
-    // FIXED: Main detection function with proper error handling
-    async function initiateDetection() {
-        if (!selectedFile) {
-            console.error('No file selected');
-            return;
-        }
-
-        // Disable button and show processing state
-        processBtn.disabled = true;
-        const originalButtonText = processBtn.innerHTML;
-        processBtn.innerHTML = '<div class="neural-spinner"></div> ANALYZING...';
-        
-        // Show progress bar
-        if (neuralProgress) {
-            neuralProgress.style.display = 'block';
-        }
-
-        // Show initial processing message
-        if (resultsArea && resultsContent) {
-            resultsContent.innerHTML = `
-                <div style="text-align: center; padding: 2rem;">
-                    <div class="neural-spinner"></div>
-                    <p style="margin-top: 1rem;">NEURAL DETECTION ACTIVE</p>
-                    <p style="margin-top: 0.5rem; opacity: 0.7;">Processing ${selectedFile.name}...</p>
-                </div>
-            `;
-            resultsArea.style.display = 'block';
-        }
-
-        try {
-            // Create FormData for file upload
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('confidence', confidenceSlider.value);
-
-            // Add processing mode if element exists
-            const processingMode = document.getElementById('processingMode');
-            if (processingMode) {
-                formData.append('mode', processingMode.value);
+        function handleFileSelect(event) {
+            console.log('File selected');  // Debug log
+            const files = event.target.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                console.log('Selected file:', selectedFile.name);  // Debug log
+                updateDropzone(files[0]);
+                processBtn.disabled = false;
             }
-
-            console.log('Uploading file:', selectedFile.name);
-
-            // Start progress animation
-            const progressInterval = animateProgress();
-
-            // Make API request
-            const response = await fetch('/api/neural/detect/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            // Clear progress animation
-            clearInterval(progressInterval);
-
-            console.log('Response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
-
-            const result = await response.json();
-            console.log('Detection result:', result);
-
-            // Handle different response types
-            if (result.type === 'video_stream') {
-                handleVideoProcessing(result);
-            } else if (result.type === 'image_analysis') {
-                handleImageResults(result);
-            } else {
-                // Handle generic success response
-                handleGenericResults(result);
-            }
-
-        } catch (error) {
-            console.error('Detection error:', error);
-            showError(error.message || 'Detection failed');
-        } finally {
-            // Reset UI state
-            if (neuralProgress) {
-                neuralProgress.style.display = 'none';
-            }
-            processBtn.disabled = false;
-            processBtn.innerHTML = originalButtonText;
         }
-    }
 
-    // FIXED: Progress animation with proper cleanup
-    function animateProgress() {
-        if (!progressFill) return null;
-        
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress >= 90) {
-                progress = 90;
-                clearInterval(interval);
-            }
-            progressFill.style.width = progress + '%';
-        }, 300);
-
-        return interval;
-    }
-
-    // FIXED: Video processing handler
-    function handleVideoProcessing(result) {
-        if (!resultsContent) return;
-
-        resultsContent.innerHTML = `
-            <div style="padding: 1rem; border-left: 4px solid currentColor;">
-                <h3 style="margin-bottom: 1rem;">
-                    <i class="fas fa-video"></i> Video Analysis in Progress
-                </h3>
-                <p style="margin-bottom: 1rem;">
-                    Job ID: <strong>${result.job_id}</strong>
-                </p>
-                <p style="margin-bottom: 1rem;">
-                    Status: <strong>${result.neural_response || 'Processing'}</strong>
-                </p>
-                <p style="margin-bottom: 1rem;">
-                    Neural Load: <strong>${result.neural_load || 'Unknown'}</strong>
-                </p>
-                <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 5px;">
-                    <i class="fas fa-info-circle"></i> 
-                    Video processing will complete in background. Results will appear here automatically.
-                </div>
-            </div>
-        `;
-        
-        // Start polling for video completion
-        if (result.job_id) {
-            pollVideoStatus(result.job_id);
-        }
-    }
-
-    // FIXED: Image results handler
-    function handleImageResults(result) {
-        if (!resultsContent || !progressFill) return;
-
-        // Complete progress bar
-        progressFill.style.width = '100%';
-        
-        setTimeout(() => {
-            let imageHtml = '';
-            if (result.output_url) {
-                // Add timestamp to prevent caching issues
-                const timestamp = new Date().getTime();
-                imageHtml = `<img src="${result.output_url}?t=${timestamp}" style="max-width: 100%; height: auto; border-radius: 10px; margin-bottom: 1rem;" alt="Detection Results">`;
-            }
-
-            resultsContent.innerHTML = `
-                <div style="padding: 1rem;">
-                    <h3 style="margin-bottom: 1rem;">
-                        <i class="fas fa-check-circle"></i> Analysis Complete
-                    </h3>
-                    
-                    ${imageHtml}
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1rem 0;">
-                        <div style="text-align: center; padding: 1rem; border: 1px solid currentColor; border-radius: 5px;">
-                            <div style="font-size: 1.5rem; font-weight: bold;">${result.detections || 0}</div>
-                            <div style="opacity: 0.8;">Objects Detected</div>
-                        </div>
-                        <div style="text-align: center; padding: 1rem; border: 1px solid currentColor; border-radius: 5px;">
-                            <div style="font-size: 1.5rem; font-weight: bold;">${result.confidence || 0}%</div>
-                            <div style="opacity: 0.8;">Avg Confidence</div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 5px;">
-                        <i class="fas fa-info-circle"></i> 
-                        ${result.message || 'Detection completed successfully'}
-                    </div>
-
-                    ${result.detected_objects && result.detected_objects.length > 0 ? `
-                        <div style="margin-top: 1rem;">
-                            <strong>Detected Objects:</strong> ${result.detected_objects.join(', ')}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }, 500);
-    }
-
-    // FIXED: Generic results handler for other response types
-    function handleGenericResults(result) {
-        if (!resultsContent) return;
-
-        resultsContent.innerHTML = `
-            <div style="padding: 1rem;">
-                <h3 style="margin-bottom: 1rem;">
-                    <i class="fas fa-info-circle"></i> Processing Complete
-                </h3>
-                <p><strong>Status:</strong> ${result.status || 'Unknown'}</p>
-                <p><strong>Response:</strong> ${result.neural_response || 'No response'}</p>
-                <p><strong>Message:</strong> ${result.message || 'No message'}</p>
-                
-                ${result.job_id ? `<p><strong>Job ID:</strong> ${result.job_id}</p>` : ''}
-            </div>
-        `;
-    }
-
-    // FIXED: Video status polling with proper error handling
-    function pollVideoStatus(jobId) {
-        let pollCount = 0;
-        const maxPolls = 100; // 5 minutes at 3-second intervals
-        
-        const pollInterval = setInterval(async () => {
-            pollCount++;
+        function updateDropzone(file) {
+            const icon = dropzone.querySelector('.dropzone-icon');
+            const text = dropzone.querySelector('.dropzone-text');
+            const subtext = dropzone.querySelector('.dropzone-subtext');
             
-            try {
-                const response = await fetch(`/api/neural/detect/status/${jobId}`);
+            if (icon && text && subtext) {
+                icon.className = file.type.startsWith('video/') ? 
+                    'fas fa-video dropzone-icon' : 'fas fa-image dropzone-icon';
+                text.textContent = `TARGET: ${file.name}`;
+                subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB • READY FOR NEURAL ANALYSIS`;
                 
-                if (!response.ok) {
-                    throw new Error(`Status check failed: ${response.status}`);
-                }
+                dropzone.style.borderColor = '#0066FF';
+                dropzone.style.background = 'rgba(0, 255, 255, 0.1)';
                 
-                const status = await response.json();
-                console.log('Poll status:', status);
-                
-                if (status.status === 'COMPLETE') {
-                    clearInterval(pollInterval);
-                    handleImageResults(status);
-                } else if (status.status === 'ERROR') {
-                    clearInterval(pollInterval);
-                    showError(status.message || 'Video processing failed');
-                }
-                
-            } catch (error) {
-                console.error('Polling error:', error);
-                
-                // Stop polling after repeated failures or max attempts
-                if (pollCount >= maxPolls) {
-                    clearInterval(pollInterval);
-                    showError('Video processing status check timed out');
-                }
+                isVideoProcessing = file.type.startsWith('video/');
             }
-        }, 3000);
-    }
-
-    // FIXED: Error display function
-    function showError(message) {
-        if (!resultsContent) {
-            console.error('Error:', message);
-            return;
         }
 
-        resultsContent.innerHTML = `
-            <div style="padding: 1rem; border-left: 4px solid #ff4444;">
-                <h3 style="color: #ff4444; margin-bottom: 1rem;">
-                    <i class="fas fa-exclamation-triangle"></i> Error
-                </h3>
-                <p>${message}</p>
-                <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 5px;">
-                    <strong>Troubleshooting:</strong>
-                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                        <li>Check if the file format is supported</li>
-                        <li>Try a smaller file size</li>
-                        <li>Refresh the page and try again</li>
-                    </ul>
+        function updateConfidence() {
+            if (confidenceValue) {
+                confidenceValue.textContent = confidenceSlider.value + '%';
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            dropzone.classList.add('dragover');
+        }
+
+        function handleDragLeave() {
+            dropzone.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            dropzone.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                fileInput.files = files;
+                updateDropzone(files[0]);
+                processBtn.disabled = false;
+            }
+        }
+
+        async function initiateDetection() {
+            console.log('Detection initiated');  // Debug log
+            
+            if (!selectedFile) {
+                console.error('No file selected');
+                alert('Please select a file first');
+                return;
+            }
+
+            // Disable button and show processing state
+            processBtn.disabled = true;
+            const originalButtonText = processBtn.innerHTML;
+            processBtn.innerHTML = '<div class="neural-spinner"></div> ANALYZING...';
+            
+            // Show progress bar
+            if (neuralProgress) {
+                neuralProgress.style.display = 'block';
+            }
+
+            // Show initial processing message in results area
+            if (resultsArea) {
+                resultsArea.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <div class="neural-spinner"></div>
+                        <p style="margin-top: 1rem; color: #0066FF;">NEURAL DETECTION ACTIVE</p>
+                        <p style="margin-top: 0.5rem; opacity: 0.7;">Processing ${selectedFile.name}...</p>
+                    </div>
+                `;
+            }
+
+            try {
+                console.log('Creating FormData...');  // Debug log
+                
+                // Create FormData for file upload
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('confidence', confidenceSlider.value);
+                
+                if (modelSelect) {
+                    formData.append('model', modelSelect.value);
+                }
+
+                console.log('Uploading file:', selectedFile.name, 'Size:', selectedFile.size);  // Debug log
+
+                // Start progress animation
+                const progressInterval = animateProgress();
+
+                // Make API request
+                console.log('Making API request to /api/neural/detect/upload');  // Debug log
+                
+                const response = await fetch('/api/neural/detect/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Clear progress animation
+                clearInterval(progressInterval);
+
+                console.log('Response received:', response.status, response.statusText);  // Debug log
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('API Error:', response.status, errorText);  // Debug log
+                    throw new Error(`Server Error ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('Detection result:', result);  // Debug log
+
+                // Handle different response types
+                if (result.type === 'video_stream') {
+                    handleVideoProcessing(result);
+                } else if (result.type === 'image_analysis') {
+                    handleImageResults(result);
+                } else {
+                    handleGenericResults(result);
+                }
+
+            } catch (error) {
+                console.error('Detection error:', error);  // Debug log
+                showError(error.message || 'Detection failed. Please check console for details.');
+            } finally {
+                // Reset UI state
+                if (neuralProgress) {
+                    neuralProgress.style.display = 'none';
+                }
+                processBtn.disabled = false;
+                processBtn.innerHTML = originalButtonText;
+            }
+        }
+
+        function animateProgress() {
+            if (!progressFill) return null;
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 90) {
+                    progress = 90;
+                    clearInterval(interval);
+                }
+                progressFill.style.width = progress + '%';
+            }, 300);
+
+            return interval;
+        }
+
+        function handleVideoProcessing(result) {
+            if (!resultsArea) return;
+
+            resultsArea.innerHTML = `
+                <div style="padding: 1rem; border-left: 4px solid #0066FF;">
+                    <h3 style="margin-bottom: 1rem; color: #0066FF;">
+                        <i class="fas fa-video"></i> Video Analysis in Progress
+                    </h3>
+                    <p style="margin-bottom: 1rem;">
+                        Job ID: <strong>${result.job_id}</strong>
+                    </p>
+                    <p style="margin-bottom: 1rem;">
+                        Status: <strong>${result.neural_response || 'Processing'}</strong>
+                    </p>
+                    <p style="margin-bottom: 1rem;">
+                        Neural Load: <strong>${result.neural_load || 'Unknown'}</strong>
+                    </p>
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,102,255,0.1); border-radius: 5px;">
+                        <i class="fas fa-info-circle"></i> 
+                        Video processing will complete in background. Results will appear here automatically.
+                    </div>
                 </div>
-            </div>
-        `;
-        
-        if (resultsArea) {
-            resultsArea.style.display = 'block';
+            `;
+            
+            // Start polling for video completion
+            if (result.job_id) {
+                pollVideoStatus(result.job_id);
+            }
         }
-    }
 
-    // Initialize confidence display
-    updateConfidence();
+        function handleImageResults(result) {
+            if (!resultsArea || !progressFill) return;
 
-    // Add error handling for uncaught errors
-    window.addEventListener('error', function(e) {
-        console.error('JavaScript error:', e.error);
-    });
+            // Complete progress bar
+            progressFill.style.width = '100%';
+            
+            setTimeout(() => {
+                let imageHtml = '';
+                if (result.output_url) {
+                    // Add timestamp to prevent caching issues
+                    const timestamp = new Date().getTime();
+                    imageHtml = `<img src="${result.output_url}?t=${timestamp}" style="max-width: 100%; height: auto; border-radius: 10px; margin-bottom: 1rem;" alt="Detection Results">`;
+                }
 
-    // Add unhandled promise rejection handling
-    window.addEventListener('unhandledrejection', function(e) {
-        console.error('Unhandled promise rejection:', e.reason);
-    });
+                resultsArea.innerHTML = `
+                    <div style="padding: 1rem;">
+                        <h3 style="margin-bottom: 1rem; color: #0066FF;">
+                            <i class="fas fa-check-circle"></i> Analysis Complete
+                        </h3>
+                        
+                        ${imageHtml}
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                            <div style="text-align: center; padding: 1rem; border: 1px solid #0066FF; border-radius: 5px;">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #0066FF;">${result.detections || 0}</div>
+                                <div style="opacity: 0.8;">Objects Detected</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; border: 1px solid #0066FF; border-radius: 5px;">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #0066FF;">${result.confidence || 0}%</div>
+                                <div style="opacity: 0.8;">Avg Confidence</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,255,0,0.1); border-radius: 5px;">
+                            <i class="fas fa-info-circle"></i> 
+                            ${result.message || 'Detection completed successfully'}
+                        </div>
 
+                        ${result.detected_objects && result.detected_objects.length > 0 ? `
+                            <div style="margin-top: 1rem;">
+                                <strong>Detected Objects:</strong> ${result.detected_objects.join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }, 500);
+        }
+
+        function handleGenericResults(result) {
+            if (!resultsArea) return;
+
+            resultsArea.innerHTML = `
+                <div style="padding: 1rem;">
+                    <h3 style="margin-bottom: 1rem; color: #0066FF;">
+                        <i class="fas fa-info-circle"></i> Processing Complete
+                    </h3>
+                    <p><strong>Status:</strong> ${result.status || 'Unknown'}</p>
+                    <p><strong>Response:</strong> ${result.neural_response || 'No response'}</p>
+                    <p><strong>Message:</strong> ${result.message || 'No message'}</p>
+                    
+                    ${result.job_id ? `<p><strong>Job ID:</strong> ${result.job_id}</p>` : ''}
+                </div>
+            `;
+        }
+
+        function pollVideoStatus(jobId) {
+            let pollCount = 0;
+            const maxPolls = 100; // 5 minutes at 3-second intervals
+            
+            const pollInterval = setInterval(async () => {
+                pollCount++;
+                
+                try {
+                    const response = await fetch(`/api/neural/detect/status/${jobId}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Status check failed: ${response.status}`);
+                    }
+                    
+                    const status = await response.json();
+                    console.log('Poll status:', status);
+                    
+                    if (status.status === 'COMPLETE') {
+                        clearInterval(pollInterval);
+                        handleImageResults(status);
+                    } else if (status.status === 'ERROR') {
+                        clearInterval(pollInterval);
+                        showError(status.message || 'Video processing failed');
+                    }
+                    
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    
+                    if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        showError('Video processing status check timed out');
+                    }
+                }
+            }, 3000);
+        }
+
+        function showError(message) {
+            if (!resultsArea) {
+                console.error('Error:', message);
+                alert('Error: ' + message);
+                return;
+            }
+
+            resultsArea.innerHTML = `
+                <div style="padding: 1rem; border-left: 4px solid #ff4444;">
+                    <h3 style="color: #ff4444; margin-bottom: 1rem;">
+                        <i class="fas fa-exclamation-triangle"></i> Error
+                    </h3>
+                    <p>${message}</p>
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,68,68,0.1); border-radius: 5px;">
+                        <strong>Troubleshooting:</strong>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                            <li>Check if the file format is supported</li>
+                            <li>Try a smaller file size</li>
+                            <li>Check browser console for detailed errors</li>
+                            <li>Refresh the page and try again</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize
+        updateConfidence();
+
+        // Debug: Check if all elements are found
+        console.log('DOM Elements Check:');
+        console.log('fileInput:', fileInput ? 'Found' : 'NOT FOUND');
+        console.log('dropzone:', dropzone ? 'Found' : 'NOT FOUND');
+        console.log('processBtn:', processBtn ? 'Found' : 'NOT FOUND');
+        console.log('confidenceSlider:', confidenceSlider ? 'Found' : 'NOT FOUND');
+
+        // Add error handling for uncaught errors
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript error:', e.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
     </script>
 </body>
 </html>
