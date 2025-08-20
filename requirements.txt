@@ -30,3 +30,4 @@ torchvision
 python-docx
 pdf2image
 gunicorn==21.2.0
+ultralytics
