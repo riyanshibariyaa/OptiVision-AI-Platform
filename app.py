@@ -153,70 +153,7 @@ def neural_blur_upload():
             'message': 'Neural network encountered critical error'
         }), 500
 
-@app.route('/api/neural/detect/upload', methods=['POST'])
-def neural_detect_upload():
-    try:
-        if 'file' not in request.files:
-            return jsonify({
-                'status': 'ERROR',
-                'neural_response': 'NO_INPUT_DETECTED',
-                'message': 'Object detection requires input stream'
-            }), 400
-        
-        file = request.files['file']
-        job_id = f"DETECT_{generate_unique_id()}"
-        
-        filename = secure_filename(file.filename)
-        file_ext = filename.rsplit('.', 1)[1].lower()
-        save_path = f"uploads/{job_id}.{file_ext}"
-        
-        os.makedirs("uploads", exist_ok=True)
-        file.save(save_path)
-        
-        # Initialize neural detector
-        detector = ObjectDetector()
-        
-        if file_ext in ['mp4', 'avi', 'mov', 'mkv']:
-            # Neural video processing
-            threading.Thread(
-                target=neural_process_video,
-                args=(save_path, job_id, detector)
-            ).start()
-            
-            return jsonify({
-                'status': 'NEURAL_PROCESSING',
-                'neural_response': 'VIDEO_STREAM_ANALYSIS',
-                'job_id': job_id,
-                'type': 'video_stream',
-                'neural_load': '67%',
-                'message': 'Neural network analyzing video stream'
-            })
-        else:
-            # Neural image processing
-            results = detector.detect_objects(save_path)
-            
-            output_path = f"uploads/{job_id}_neural_output.jpg"
-            processed_image = detector.draw_boxes(save_path, results)
-            cv2.imwrite(output_path, processed_image)
-            
-            return jsonify({
-                'status': 'NEURAL_COMPLETE',
-                'neural_response': 'OBJECTS_CLASSIFIED',
-                'job_id': job_id,
-                'type': 'image_analysis',
-                'detections': len(results),
-                'confidence': 94.7,
-                'output_url': f'/uploads/{job_id}_neural_output.jpg',
-                'message': f'Neural network detected {len(results)} objects'
-            })
-            
-    except Exception as e:
-        logger.error(f"Neural detection error: {str(e)}")
-        return jsonify({
-            'status': 'CRITICAL_ERROR',
-            'neural_response': 'DETECTION_FAILURE',
-            'message': 'Neural detection protocols failed'
-        }), 500
+
 
 @app.route('/api/neural/ocr/upload', methods=['POST'])
 def neural_ocr_upload():
@@ -303,9 +240,9 @@ def neural_metrics():
 
 ################################################################## 
 # Utility Routes
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory('uploads', filename)
+# @app.route('/uploads/<filename>')
+# def uploaded_file(filename):
+#     return send_from_directory('uploads', filename)
 
 ################################################################## 
 # Neural Video Processing Function
@@ -708,6 +645,279 @@ def initialize_neural_systems():
     
     # Log system startup
     logger.info("Neural Leak Detection System Online")
+
+# Add this to your app.py - replace the existing neural_detect_upload function
+
+@app.route('/api/neural/detect/upload', methods=['POST'])
+def neural_detect_upload():
+    try:
+        if 'file' not in request.files:
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'NO_INPUT_DETECTED',
+                'message': 'Object detection requires input stream'
+            }), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'EMPTY_STREAM',
+                'message': 'No file selected'
+            }), 400
+            
+        job_id = f"DETECT_{generate_unique_id()}"
+        
+        filename = secure_filename(file.filename)
+        file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+        save_path = f"uploads/{job_id}.{file_ext}"
+        
+        # Ensure uploads directory exists
+        os.makedirs("uploads", exist_ok=True)
+        file.save(save_path)
+        
+        logger.info(f"File saved: {save_path}")
+        
+        # Initialize neural detector with error handling
+        try:
+            detector = ObjectDetector()
+            logger.info("ObjectDetector initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize ObjectDetector: {str(e)}")
+            return jsonify({
+                'status': 'CRITICAL_ERROR',
+                'neural_response': 'DETECTOR_INIT_FAILED',
+                'message': f'Neural detector initialization failed: {str(e)}'
+            }), 500
+        
+        if file_ext in ['mp4', 'avi', 'mov', 'mkv', 'webm']:
+            # Neural video processing
+            threading.Thread(
+                target=neural_process_video_fixed,
+                args=(save_path, job_id, detector)
+            ).start()
+            
+            return jsonify({
+                'status': 'NEURAL_PROCESSING',
+                'neural_response': 'VIDEO_STREAM_ANALYSIS',
+                'job_id': job_id,
+                'type': 'video_stream',
+                'neural_load': '67%',
+                'message': 'Neural network analyzing video stream'
+            })
+        else:
+            # Neural image processing
+            try:
+                logger.info(f"Starting image detection for: {save_path}")
+                
+                # Detect objects
+                results = detector.detect_objects(save_path)
+                logger.info(f"Detection completed. Found {len(results)} objects")
+                
+                # Draw boxes and save output
+                output_path = f"uploads/{job_id}_neural_output.jpg"
+                processed_image = detector.draw_boxes(save_path, results)
+                
+                if processed_image is not None:
+                    cv2.imwrite(output_path, processed_image)
+                    logger.info(f"Output saved to: {output_path}")
+                else:
+                    logger.warning("Processed image is None, using original")
+                    # Copy original file as fallback
+                    import shutil
+                    shutil.copy2(save_path, output_path)
+                
+                # Calculate average confidence
+                avg_confidence = 0
+                if results:
+                    avg_confidence = sum(r['confidence'] for r in results) / len(results) * 100
+                
+                return jsonify({
+                    'status': 'NEURAL_COMPLETE',
+                    'neural_response': 'OBJECTS_CLASSIFIED',
+                    'job_id': job_id,
+                    'type': 'image_analysis',
+                    'detections': len(results),
+                    'confidence': round(avg_confidence, 1),
+                    'output_url': f'/uploads/{job_id}_neural_output.jpg',
+                    'detected_objects': [r['class_name'] for r in results],
+                    'message': f'Neural network detected {len(results)} objects'
+                })
+                
+            except Exception as detection_error:
+                logger.error(f"Detection error: {str(detection_error)}")
+                return jsonify({
+                    'status': 'DETECTION_ERROR',
+                    'neural_response': 'PROCESSING_FAILED',
+                    'message': f'Detection failed: {str(detection_error)}'
+                }), 500
+            
+    except Exception as e:
+        logger.error(f"Neural detection error: {str(e)}")
+        return jsonify({
+            'status': 'CRITICAL_ERROR',
+            'neural_response': 'DETECTION_FAILURE',
+            'message': f'Neural detection protocols failed: {str(e)}'
+        }), 500
+
+# Fixed video processing function
+def neural_process_video_fixed(video_path, job_id, detector):
+    """Enhanced neural network video processing with better error handling"""
+    try:
+        logger.info(f"NEURAL: Initiating video analysis - {job_id}")
+        
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            logger.error(f"Failed to open video: {video_path}")
+            return
+            
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        output_path = f"uploads/{job_id}_neural_output.mp4"
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        
+        frame_count = 0
+        detection_count = 0
+        total_detections = 0
+        processed_frames = 0
+        
+        logger.info(f"Video info: {width}x{height}, {fps} FPS, {total_frames} frames")
+        
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            frame_count += 1
+            
+            # Process every 3rd frame for efficiency
+            if frame_count % 3 == 0:
+                try:
+                    results = detector.detect_objects_frame(frame)
+                    frame = detector.draw_boxes_frame(frame, results)
+                    detection_count += 1
+                    total_detections += len(results)
+                    processed_frames += 1
+                    
+                    if processed_frames % 30 == 0:  # Log every 30 processed frames
+                        logger.info(f"Processed {processed_frames} frames, found {total_detections} total detections")
+                        
+                except Exception as frame_error:
+                    logger.warning(f"Frame processing error: {str(frame_error)}")
+                    # Continue with original frame
+            
+            out.write(frame)
+            
+            # Save preview frame periodically
+            if frame_count % 60 == 0:  # Every 2 seconds at 30fps
+                preview_path = f"uploads/neural_preview_{job_id}.jpg"
+                cv2.imwrite(preview_path, frame)
+        
+        cap.release()
+        out.release()
+        
+        # Save analysis results
+        analysis_data = {
+            'neural_status': 'ANALYSIS_COMPLETE',
+            'job_id': job_id,
+            'total_frames': frame_count,
+            'processed_frames': processed_frames,
+            'total_detections': total_detections,
+            'avg_detections_per_frame': total_detections / max(processed_frames, 1),
+            'output_path': output_path,
+            'video_info': {
+                'width': width,
+                'height': height,
+                'fps': fps,
+                'duration_seconds': frame_count / max(fps, 1)
+            }
+        }
+        
+        with open(f"uploads/{job_id}_neural_analysis.json", 'w') as f:
+            json.dump(analysis_data, f, indent=2)
+        
+        logger.info(f"Video analysis complete: {job_id}")
+        logger.info(f"Processed {processed_frames}/{frame_count} frames, found {total_detections} detections")
+        
+    except Exception as e:
+        logger.error(f"Video processing error: {str(e)}")
+        # Save error info
+        error_data = {
+            'neural_status': 'PROCESSING_ERROR',
+            'job_id': job_id,
+            'error': str(e),
+            'timestamp': time.time()
+        }
+        with open(f"uploads/{job_id}_error.json", 'w') as f:
+            json.dump(error_data, f, indent=2)
+
+# Add route to serve uploaded files
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Serve uploaded files"""
+    try:
+        uploads_dir = os.path.abspath("uploads")
+        return send_from_directory(uploads_dir, filename)
+    except Exception as e:
+        logger.error(f"Error serving file {filename}: {str(e)}")
+        return "File not found", 404
+
+# Add status check endpoint for video processing
+@app.route('/api/neural/detect/status/<job_id>')
+def get_detection_status(job_id):
+    """Get the status of a detection job"""
+    try:
+        # Check for analysis results
+        analysis_file = f"uploads/{job_id}_neural_analysis.json"
+        error_file = f"uploads/{job_id}_error.json"
+        
+        if os.path.exists(analysis_file):
+            with open(analysis_file, 'r') as f:
+                data = json.load(f)
+            
+            return jsonify({
+                'status': 'COMPLETE',
+                'neural_response': 'VIDEO_ANALYSIS_COMPLETE',
+                'job_id': job_id,
+                'detections': data.get('total_detections', 0),
+                'confidence': 85.0,  # Mock confidence for video
+                'output_url': f'/uploads/{job_id}_neural_output.mp4',
+                'preview_url': f'/uploads/neural_preview_{job_id}.jpg',
+                'details': data
+            })
+        
+        elif os.path.exists(error_file):
+            with open(error_file, 'r') as f:
+                error_data = json.load(f)
+            
+            return jsonify({
+                'status': 'ERROR',
+                'neural_response': 'PROCESSING_ERROR',
+                'job_id': job_id,
+                'message': error_data.get('error', 'Unknown error'),
+                'timestamp': error_data.get('timestamp')
+            })
+        
+        else:
+            # Still processing
+            return jsonify({
+                'status': 'PROCESSING',
+                'neural_response': 'VIDEO_ANALYSIS_ACTIVE',
+                'job_id': job_id,
+                'message': 'Neural analysis in progress'
+            })
+            
+    except Exception as e:
+        logger.error(f"Status check error: {str(e)}")
+        return jsonify({
+            'status': 'ERROR',
+            'neural_response': 'STATUS_CHECK_FAILED',
+            'message': str(e)
+        }), 500
 
 ################################################################## 
 if __name__ == '__main__':

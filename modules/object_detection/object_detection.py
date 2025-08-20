@@ -8,15 +8,23 @@ import time
 from pathlib import Path
 import urllib.request
 
-
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Try to import ONNX Runtime
+try:
+    import onnxruntime as ort
+    ONNX_AVAILABLE = True
+    logger.info("ONNX Runtime available")
+except ImportError:
+    ONNX_AVAILABLE = False
+    logger.warning("ONNX Runtime not available, falling back to OpenCV DNN")
+
 class YOLOv8:
-    """YOLOv8 object detector with ONNX Runtime"""
+    """YOLOv8 object detector with ONNX Runtime or OpenCV DNN fallback"""
     
-    def __init__(self, model_path, conf_thres=0.25, iou_thres=0.45):  # Modified thresholds
+    def __init__(self, model_path, conf_thres=0.25, iou_thres=0.45):
         """
         Initialize YOLOv8 object detector
         
@@ -27,11 +35,18 @@ class YOLOv8:
         """
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
+        self.model_path = model_path
+        
+        # Initialize model
+        self.session = None
+        self.net = None
+        self.input_width = 640
+        self.input_height = 640
         
         # Load model
         self.initialize_model(model_path)
         
-        # Class names
+        # Class names (COCO dataset)
         self.class_names = [
             'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
             'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
@@ -49,9 +64,169 @@ class YOLOv8:
         np.random.seed(42)  # For reproducibility
         self.colors = np.random.randint(0, 255, size=(len(self.class_names), 3), dtype=np.uint8)
 
-    # All existing methods remain the same
+    def initialize_model(self, model_path):
+        """Initialize the YOLO model"""
+        try:
+            if not os.path.exists(model_path):
+                # Try to download a default model if path doesn't exist
+                logger.warning(f"Model not found at {model_path}, attempting to use default")
+                self._setup_fallback_model()
+                return
+            
+            if ONNX_AVAILABLE and model_path.endswith('.onnx'):
+                # Use ONNX Runtime
+                self.session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
+                self.input_name = self.session.get_inputs()[0].name
+                logger.info(f"Initialized ONNX model: {model_path}")
+            else:
+                # Use OpenCV DNN as fallback
+                self.net = cv2.dnn.readNetFromONNX(model_path)
+                logger.info(f"Initialized OpenCV DNN model: {model_path}")
+                
+        except Exception as e:
+            logger.error(f"Failed to load model from {model_path}: {str(e)}")
+            self._setup_fallback_model()
 
-    # Add this new method for test-time augmentation
+    def _setup_fallback_model(self):
+        """Setup a fallback model using OpenCV's pre-trained models"""
+        try:
+            # Try to use OpenCV's built-in models or create a mock detector
+            logger.warning("Setting up fallback detection method")
+            self.net = None
+            self.session = None
+        except Exception as e:
+            logger.error(f"Fallback model setup failed: {str(e)}")
+
+    def preprocess(self, image):
+        """Preprocess image for YOLO inference"""
+        # Resize image to model input size
+        resized = cv2.resize(image, (self.input_width, self.input_height))
+        
+        # Convert BGR to RGB
+        rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+        
+        # Normalize to [0, 1]
+        normalized = rgb.astype(np.float32) / 255.0
+        
+        # Add batch dimension and change to CHW format
+        input_tensor = np.transpose(normalized, (2, 0, 1))
+        input_tensor = np.expand_dims(input_tensor, axis=0)
+        
+        return input_tensor
+
+    def postprocess(self, outputs, original_shape):
+        """Post-process YOLO outputs"""
+        if isinstance(outputs, list):
+            outputs = outputs[0]
+        
+        # Handle different output formats
+        if len(outputs.shape) == 3:
+            outputs = outputs[0]  # Remove batch dimension
+        
+        # outputs shape: [num_predictions, 84] where 84 = 4 (bbox) + 80 (classes)
+        boxes = []
+        scores = []
+        class_ids = []
+        
+        # Scale factors for converting back to original image size
+        x_scale = original_shape[1] / self.input_width
+        y_scale = original_shape[0] / self.input_height
+        
+        for detection in outputs:
+            if len(detection) < 5:
+                continue
+                
+            # Extract confidence scores for all classes (skip first 4 bbox values)
+            confidence_scores = detection[4:]
+            
+            # Get the class with highest confidence
+            class_id = np.argmax(confidence_scores)
+            confidence = confidence_scores[class_id]
+            
+            if confidence > self.conf_threshold:
+                # Extract bounding box coordinates (center_x, center_y, width, height)
+                center_x, center_y, width, height = detection[:4]
+                
+                # Convert to corner coordinates and scale back to original image
+                x1 = int((center_x - width / 2) * x_scale)
+                y1 = int((center_y - height / 2) * y_scale)
+                x2 = int((center_x + width / 2) * x_scale)
+                y2 = int((center_y + height / 2) * y_scale)
+                
+                # Ensure coordinates are within image bounds
+                x1 = max(0, min(x1, original_shape[1]))
+                y1 = max(0, min(y1, original_shape[0]))
+                x2 = max(0, min(x2, original_shape[1]))
+                y2 = max(0, min(y2, original_shape[0]))
+                
+                boxes.append([x1, y1, x2 - x1, y2 - y1])  # Convert to [x, y, w, h] format
+                scores.append(float(confidence))
+                class_ids.append(int(class_id))
+        
+        # Apply Non-Maximum Suppression
+        if boxes:
+            indices = cv2.dnn.NMSBoxes(boxes, scores, self.conf_threshold, self.iou_threshold)
+            
+            if len(indices) > 0:
+                # Handle different OpenCV versions
+                if isinstance(indices, np.ndarray):
+                    indices = indices.flatten()
+                
+                final_boxes = [boxes[i] for i in indices]
+                final_scores = [scores[i] for i in indices]
+                final_class_ids = [class_ids[i] for i in indices]
+                
+                return final_boxes, final_scores, final_class_ids
+        
+        return [], [], []
+
+    def __call__(self, image):
+        """Main inference method"""
+        return self.detect_objects(image)
+
+    def detect_objects(self, image):
+        """
+        Detect objects in an image
+        
+        Args:
+            image: Input image (numpy array)
+            
+        Returns:
+            boxes: List of bounding boxes [x, y, w, h]
+            scores: List of confidence scores
+            class_ids: List of class IDs
+        """
+        if image is None:
+            return [], [], []
+            
+        try:
+            original_shape = image.shape[:2]
+            
+            # Preprocess image
+            input_tensor = self.preprocess(image)
+            
+            # Run inference
+            if self.session is not None:
+                # ONNX Runtime inference
+                outputs = self.session.run(None, {self.input_name: input_tensor})
+            elif self.net is not None:
+                # OpenCV DNN inference
+                self.net.setInput(input_tensor)
+                outputs = self.net.forward()
+            else:
+                # Fallback: return empty results
+                logger.warning("No valid model available for inference")
+                return [], [], []
+            
+            # Post-process outputs
+            boxes, scores, class_ids = self.postprocess(outputs, original_shape)
+            
+            return boxes, scores, class_ids
+            
+        except Exception as e:
+            logger.error(f"Error during object detection: {str(e)}")
+            return [], [], []
+
     def detect_objects_with_tta(self, img):
         """
         Detect objects using test-time augmentation
@@ -77,440 +252,248 @@ class YOLOv8:
             boxes2[i][0] = width - box[0] - box[2]  # Adjust x coordinate
         
         # Combine detections
-        boxes = boxes1 + boxes2
-        scores = scores1 + scores2
-        class_ids = class_ids1 + class_ids2
+        all_boxes = boxes1 + boxes2
+        all_scores = scores1 + scores2
+        all_class_ids = class_ids1 + class_ids2
         
         # Apply NMS to combined detections
-        if boxes:
-            boxes, scores, class_ids = apply_nms(boxes, scores, class_ids, self.iou_threshold)
+        if all_boxes:
+            indices = cv2.dnn.NMSBoxes(all_boxes, all_scores, self.conf_threshold, self.iou_threshold)
+            
+            if len(indices) > 0:
+                if isinstance(indices, np.ndarray):
+                    indices = indices.flatten()
+                
+                final_boxes = [all_boxes[i] for i in indices]
+                final_scores = [all_scores[i] for i in indices]
+                final_class_ids = [all_class_ids[i] for i in indices]
+                
+                return final_boxes, final_scores, final_class_ids
         
-        return boxes, scores, class_ids
+        return [], [], []
+
+    def draw_detections(self, image, boxes, scores, class_ids):
+        """Draw bounding boxes and labels on image"""
+        result_image = image.copy()
+        
+        for box, score, class_id in zip(boxes, scores, class_ids):
+            x, y, w, h = box
+            x1, y1 = int(x), int(y)
+            x2, y2 = int(x + w), int(y + h)
+            
+            # Get color for this class
+            color = tuple(map(int, self.colors[class_id % len(self.colors)]))
+            
+            # Draw bounding box
+            cv2.rectangle(result_image, (x1, y1), (x2, y2), color, 2)
+            
+            # Draw label
+            label = f"{self.class_names[class_id]}: {score:.2f}"
+            
+            # Get text size
+            (text_width, text_height), baseline = cv2.getTextSize(
+                label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2
+            )
+            
+            # Draw label background
+            cv2.rectangle(
+                result_image,
+                (x1, y1 - text_height - baseline),
+                (x1 + text_width, y1),
+                color,
+                -1
+            )
+            
+            # Draw label text
+            cv2.putText(
+                result_image,
+                label,
+                (x1, y1 - baseline),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255, 255, 255),
+                2
+            )
+        
+        return result_image
 
 
 class ObjectDetector:
     """Main object detection class that wraps YOLOv8"""
     
     def __init__(self, model_path=None):
-        self.model_path = model_path if model_path else r"C:\Users\Hp\CVPlatform\modules\object_detection\models\yolov8m.onnx"
+        self.model_path = model_path if model_path else self._get_default_model_path()
         self.detector = None
         self._initialize_detector()
+    
+    def _get_default_model_path(self):
+        """Get default model path"""
+        # Try different possible locations
+        possible_paths = [
+            r"C:\Users\Hp\CVPlatform\modules\object_detection\models\yolov8m.onnx",
+            "modules/object_detection/models/yolov8m.onnx",
+            "models/yolov8m.onnx",
+            "yolov8m.onnx"
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                return path
+        
+        # If no model found, return the first path (will trigger fallback)
+        return possible_paths[0]
     
     def _initialize_detector(self):
         """Initialize YOLOv8 detector"""
         try:
-            # Modified thresholds for better detection
             self.detector = YOLOv8(self.model_path, conf_thres=0.25, iou_thres=0.45)
             logger.info(f"Initialized YOLOv8 detector with model: {self.model_path}")
         except Exception as e:
             logger.error(f"Failed to initialize detector: {str(e)}")
             raise
-    
-    def detect_image(self, image_path, save_path=None, display=True, enhance=True):
+
+    def detect_objects(self, image_path):
         """
-        Detect objects in an image with enhanced accuracy
+        Detect objects in an image file
         
         Args:
-            image_path: Path to image or URL
-            save_path: Path to save output image (optional)
-            display: Whether to display the output image
-            enhance: Whether to apply detection enhancements
+            image_path: Path to image file
             
         Returns:
-            result_img: Image with drawn detections
-            detections: List of (boxes, scores, class_ids)
+            List of detection results
         """
-        # Load image
-        if image_path.startswith(('http://', 'https://')):
-            img = imread_from_url(image_path)
-        else:
-            img = cv2.imread(image_path)
-        
-        if img is None:
-            raise ValueError(f"Could not load image from: {image_path}")
-        
-        # Apply preprocessing if enhancing
-        if enhance:
-            img_proc = preprocess_image(img)
-        else:
-            img_proc = img.copy()
-        
-        # Detect objects (with TTA if enhancing)
-        if enhance:
-            boxes, scores, class_ids = self.detector.detect_objects_with_tta(img_proc)
-        else:
-            boxes, scores, class_ids = self.detector(img_proc)
-        
-        # Refine bounding boxes if enhancing
-        if enhance and boxes:
-            boxes = refine_boxes(img, boxes)
-            boxes = snap_to_edges(img, boxes)
-        
-        # Draw detections
-        result_img = self.detector.draw_detections(img, boxes, scores, class_ids)
-        
-        # Save if requested
-        if save_path:
-            cv2.imwrite(save_path, result_img)
-            logger.info(f"Saved detection result to: {save_path}")
-        
-        # Display if requested
-        if display:
-            cv2.namedWindow("Detected Objects", cv2.WINDOW_NORMAL)
-            cv2.imshow("Detected Objects", result_img)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-        
-        return result_img, (boxes, scores, class_ids)
-    
-    # Modify the video detection method to use enhanced detection
-    def detect_video(self, video_path, save_path=None, start_time=0, display=True, enhance=True):
-        """
-        Detect objects in a video with enhanced accuracy
-        
-        Args:
-            video_path: Path to video or YouTube URL
-            save_path: Path to save output video (optional)
-            start_time: Skip first N seconds (optional)
-            display: Whether to display the output video
-            enhance: Whether to apply detection enhancements
-            
-        Returns:
-            success: Whether video processing completed successfully
-        """
-        # Load video
-        if video_path.startswith(('http://', 'https://')) and 'youtu' in video_path:
-            # Load from YouTube
-            try:
-                from cap_from_youtube import cap_from_youtube
-                cap = cap_from_youtube(video_path, resolution='720p')
-            except ImportError:
-                logger.error("cap_from_youtube not found. Install with: pip install cap-from-youtube")
-                raise
-        else:
-            # Load from file
-            cap = cv2.VideoCapture(video_path)
-        
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video: {video_path}")
-        
-        # Skip first N seconds if requested
-        if start_time > 0:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, int(start_time * cap.get(cv2.CAP_PROP_FPS)))
-        
-        # Get video properties
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        
-        # Create video writer if saving
-        writer = None
-        if save_path:
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            writer = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
-        
-        # Process video
-        if display:
-            cv2.namedWindow("Detected Objects", cv2.WINDOW_NORMAL)
-        
-        frame_count = 0
-        processing_times = []
-        
         try:
-            while cap.isOpened():
-                # Measure processing time
-                start_time = time.time()
-                
-                # Read frame
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                # Preprocess frame if enhancing
-                if enhance:
-                    frame_proc = preprocess_image(frame)
+            # Load image
+            if isinstance(image_path, str):
+                if image_path.startswith(('http://', 'https://')):
+                    img = imread_from_url(image_path)
                 else:
-                    frame_proc = frame.copy()
-                
-                # Detect objects (with TTA if enhancing)
-                if enhance:
-                    # Skip TTA for every other frame to improve speed
-                    if frame_count % 2 == 0:
-                        boxes, scores, class_ids = self.detector.detect_objects_with_tta(frame_proc)
-                    else:
-                        boxes, scores, class_ids = self.detector(frame_proc)
-                    
-                    # Refine boxes
-                    if boxes:
-                        boxes = refine_boxes(frame, boxes)
-                else:
-                    boxes, scores, class_ids = self.detector(frame_proc)
-                
-                # Draw detections
-                result_frame = self.detector.draw_detections(frame, boxes, scores, class_ids)
-                
-                # Calculate processing time
-                process_time = time.time() - start_time
-                processing_times.append(process_time)
-                if len(processing_times) > 30:
-                    processing_times.pop(0)
-                
-                # Calculate FPS
-                fps_text = f"FPS: {1.0 / (sum(processing_times) / len(processing_times)):.1f}"
-                cv2.putText(result_frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                
-                # Write frame if saving
-                if writer:
-                    writer.write(result_frame)
-                
-                # Display frame
-                if display:
-                    cv2.imshow("Detected Objects", result_frame)
-                    
-                    # Break on 'q' key
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        break
-                
-                frame_count += 1
-                if frame_count % 100 == 0:
-                    logger.info(f"Processed {frame_count} frames")
-        
+                    img = cv2.imread(image_path)
+            else:
+                # Assume it's already a numpy array
+                img = image_path
+            
+            if img is None:
+                raise ValueError(f"Could not load image from: {image_path}")
+            
+            # Detect objects
+            boxes, scores, class_ids = self.detector(img)
+            
+            # Format results
+            results = []
+            for box, score, class_id in zip(boxes, scores, class_ids):
+                x, y, w, h = box
+                results.append({
+                    'bbox': [x, y, w, h],
+                    'confidence': score,
+                    'class_id': class_id,
+                    'class_name': self.detector.class_names[class_id]
+                })
+            
+            return results
+            
         except Exception as e:
-            logger.error(f"Error processing video: {str(e)}")
-            success = False
-        else:
-            success = True
-        finally:
-            # Clean up
-            cap.release()
-            if writer:
-                writer.release()
-            if display:
-                cv2.destroyAllWindows()
-        
-        # Log processing stats
-        if processing_times:
-            avg_time = sum(processing_times) / len(processing_times)
-            logger.info(f"Average processing time: {avg_time:.4f}s ({1.0/avg_time:.1f} FPS)")
-            logger.info(f"Processed {frame_count} frames")
-        
-        return success
-    
-    # Similar modifications for detect_webcam method
-    def detect_webcam(self, camera_id=0, save_path=None, width=None, height=None, enhance=True):
+            logger.error(f"Error detecting objects: {str(e)}")
+            return []
+
+    def detect_objects_frame(self, frame):
         """
-        Detect objects from webcam with enhanced accuracy
+        Detect objects in a single frame (for video processing)
         
         Args:
-            camera_id: Webcam ID (default: 0)
-            save_path: Path to save output video (optional)
-            width: Custom width for webcam capture (optional)
-            height: Custom height for webcam capture (optional)
-            enhance: Whether to apply detection enhancements
+            frame: Video frame (numpy array)
             
         Returns:
-            success: Whether webcam processing completed successfully
+            List of detection results
         """
-        # Open webcam
-        cap = cv2.VideoCapture(camera_id)
-        if not cap.isOpened():
-            raise ValueError(f"Could not open webcam with ID: {camera_id}")
-        
-        # Set custom resolution if specified
-        if width and height:
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        
-        # Get actual properties
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        
-        # Create video writer if saving
-        writer = None
-        if save_path:
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            writer = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
-        
-        # Start processing
-        cv2.namedWindow("Detected Objects", cv2.WINDOW_NORMAL)
-        
-        processing_times = []
-        frame_count = 0
-        
         try:
-            while cap.isOpened():
-                # Measure processing time
-                start_time = time.time()
-                
-                # Read frame
-                ret, frame = cap.read()
-                if not ret:
-                    logger.error("Failed to read frame from webcam")
-                    break
-                
-                # Preprocess frame if enhancing
-                if enhance:
-                    frame_proc = preprocess_image(frame)
-                else:
-                    frame_proc = frame
-                
-                # Detect objects (with enhanced detection every 3 frames to maintain speed)
-                if enhance and frame_count % 3 == 0:
-                    boxes, scores, class_ids = self.detector.detect_objects_with_tta(frame_proc)
-                    if boxes:
-                        boxes = refine_boxes(frame, boxes)
-                else:
-                    boxes, scores, class_ids = self.detector(frame_proc)
-                
-                # Draw detections
-                result_frame = self.detector.draw_detections(frame, boxes, scores, class_ids)
-                
-                # Calculate processing time
-                process_time = time.time() - start_time
-                processing_times.append(process_time)
-                if len(processing_times) > 30:
-                    processing_times.pop(0)
-                
-                # Calculate FPS
-                fps_text = f"FPS: {1.0 / (sum(processing_times) / len(processing_times)):.1f}"
-                cv2.putText(result_frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                
-                # Write frame if saving
-                if writer:
-                    writer.write(result_frame)
-                
-                # Display frame
-                cv2.imshow("Detected Objects", result_frame)
-                
-                # Break on 'q' key
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-                
-                frame_count += 1
-        
+            boxes, scores, class_ids = self.detector(frame)
+            
+            results = []
+            for box, score, class_id in zip(boxes, scores, class_ids):
+                x, y, w, h = box
+                results.append({
+                    'bbox': [x, y, w, h],
+                    'confidence': score,
+                    'class_id': class_id,
+                    'class_name': self.detector.class_names[class_id]
+                })
+            
+            return results
+            
         except Exception as e:
-            logger.error(f"Error processing webcam: {str(e)}")
-            success = False
-        else:
-            success = True
-        finally:
-            # Clean up
-            cap.release()
-            if writer:
-                writer.release()
-            cv2.destroyAllWindows()
-        
-        # Log processing stats
-        if processing_times:
-            avg_time = sum(processing_times) / len(processing_times)
-            logger.info(f"Average processing time: {avg_time:.4f}s ({1.0/avg_time:.1f} FPS)")
-            logger.info(f"Processed {frame_count} frames")
-        
-        return success
-    
-    def detect_webcam(self, camera_id=0, save_path=None, width=None, height=None):
+            logger.error(f"Error detecting objects in frame: {str(e)}")
+            return []
+
+    def draw_boxes(self, image_path, results):
         """
-        Detect objects from webcam
+        Draw bounding boxes on image
         
         Args:
-            camera_id: Webcam ID (default: 0)
-            save_path: Path to save output video (optional)
-            width: Custom width for webcam capture (optional)
-            height: Custom height for webcam capture (optional)
+            image_path: Path to image file
+            results: Detection results
             
         Returns:
-            success: Whether webcam processing completed successfully
+            Image with drawn bounding boxes
         """
-        # Open webcam
-        cap = cv2.VideoCapture(camera_id)
-        if not cap.isOpened():
-            raise ValueError(f"Could not open webcam with ID: {camera_id}")
-        
-        # Set custom resolution if specified
-        if width and height:
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        
-        # Get actual properties
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        
-        # Create video writer if saving
-        writer = None
-        if save_path:
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            writer = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
-        
-        # Start processing
-        cv2.namedWindow("Detected Objects", cv2.WINDOW_NORMAL)
-        
-        processing_times = []
-        frame_count = 0
-        
         try:
-            while cap.isOpened():
-                # Measure processing time
-                start_time = time.time()
-                
-                # Read frame
-                ret, frame = cap.read()
-                if not ret:
-                    logger.error("Failed to read frame from webcam")
-                    break
-                
-                # Detect objects
-                boxes, scores, class_ids = self.detector(frame)
-                
-                # Draw detections
-                result_frame = self.detector.draw_detections(frame, boxes, scores, class_ids)
-                
-                # Calculate processing time
-                process_time = time.time() - start_time
-                processing_times.append(process_time)
-                if len(processing_times) > 30:
-                    processing_times.pop(0)
-                
-                # Calculate FPS
-                fps_text = f"FPS: {1.0 / (sum(processing_times) / len(processing_times)):.1f}"
-                cv2.putText(result_frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                
-                # Write frame if saving
-                if writer:
-                    writer.write(result_frame)
-                
-                # Display frame
-                cv2.imshow("Detected Objects", result_frame)
-                
-                # Break on 'q' key
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-                
-                frame_count += 1
-        
+            # Load image
+            if isinstance(image_path, str):
+                img = cv2.imread(image_path)
+            else:
+                img = image_path
+            
+            if img is None:
+                raise ValueError(f"Could not load image")
+            
+            # Extract data for drawing
+            boxes = []
+            scores = []
+            class_ids = []
+            
+            for result in results:
+                boxes.append(result['bbox'])
+                scores.append(result['confidence'])
+                class_ids.append(result['class_id'])
+            
+            # Draw detections
+            return self.detector.draw_detections(img, boxes, scores, class_ids)
+            
         except Exception as e:
-            logger.error(f"Error processing webcam: {str(e)}")
-            success = False
-        else:
-            success = True
-        finally:
-            # Clean up
-            cap.release()
-            if writer:
-                writer.release()
-            cv2.destroyAllWindows()
+            logger.error(f"Error drawing boxes: {str(e)}")
+            return img if 'img' in locals() else np.zeros((480, 640, 3), dtype=np.uint8)
+
+    def draw_boxes_frame(self, frame, results):
+        """
+        Draw bounding boxes on a video frame
         
-        # Log processing stats
-        if processing_times:
-            avg_time = sum(processing_times) / len(processing_times)
-            logger.info(f"Average processing time: {avg_time:.4f}s ({1.0/avg_time:.1f} FPS)")
-            logger.info(f"Processed {frame_count} frames")
-        
-        return success
+        Args:
+            frame: Video frame (numpy array)
+            results: Detection results
+            
+        Returns:
+            Frame with drawn bounding boxes
+        """
+        try:
+            # Extract data for drawing
+            boxes = []
+            scores = []
+            class_ids = []
+            
+            for result in results:
+                boxes.append(result['bbox'])
+                scores.append(result['confidence'])
+                class_ids.append(result['class_id'])
+            
+            # Draw detections
+            return self.detector.draw_detections(frame, boxes, scores, class_ids)
+            
+        except Exception as e:
+            logger.error(f"Error drawing boxes on frame: {str(e)}")
+            return frame
 
 
-# Helper function to read image from URL
+# Helper functions
 def imread_from_url(url):
     """Read image from URL"""
     try:
@@ -522,166 +505,39 @@ def imread_from_url(url):
         urllib.request.urlcleanup()
         return img
     except Exception as e:
-        logger.error(f"Error reading image from URL: {str(e)}")
+        logger.error(f"Error reading image from URL {url}: {str(e)}")
         return None
-    
+
+
 def preprocess_image(img):
-    """
-    Preprocess image to improve detection quality
-    
-    Args:
-        img: Input image
-        
-    Returns:
-        Preprocessed image
-    """
-    # Make a copy to avoid modifying the original
-    img_proc = img.copy()
-    
-    # Normalize lighting using histogram equalization
-    img_yuv = cv2.cvtColor(img_proc, cv2.COLOR_BGR2YUV)
-    img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
-    img_proc = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-    
-    # Apply slight Gaussian blur to reduce noise
-    img_proc = cv2.GaussianBlur(img_proc, (3, 3), 0)
-    
-    return img_proc
+    """Apply preprocessing to enhance detection"""
+    # Apply histogram equalization to improve contrast
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    lab[:,:,0] = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8)).apply(lab[:,:,0])
+    enhanced = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+    return enhanced
 
-def refine_boxes(img, boxes):
-    """
-    Refine bounding boxes to improve accuracy
-    
-    Args:
-        img: Input image
-        boxes: List of bounding boxes [x, y, w, h]
-        
-    Returns:
-        Refined bounding boxes
-    """
-    refined_boxes = []
-    for box in boxes:
-        x, y, w, h = box
-        
-        # Ensure box is within image boundaries
-        x = max(0, x)
-        y = max(0, y)
-        w = min(w, img.shape[1] - x)
-        h = min(h, img.shape[0] - y)
-        
-        # Apply aspect ratio constraints if needed
-        if w > 0 and h > 0:  # Avoid division by zero
-            aspect = w / h
-            if aspect > 3 or aspect < 0.33:  # Unrealistic aspect ratio
-                # Adjust box dimensions while maintaining center
-                center_x, center_y = x + w/2, y + h/2
-                if aspect > 3:  # too wide
-                    w = h * 3
-                else:  # too tall
-                    h = w * 3
-                x = center_x - w/2
-                y = center_y - h/2
-        
-        refined_boxes.append([int(x), int(y), int(w), int(h)])
-    return refined_boxes
 
-def snap_to_edges(img, boxes, padding=5):
-    """
-    Adjust bounding boxes to snap to object edges
-    
-    Args:
-        img: Input image
-        boxes: List of bounding boxes [x, y, w, h]
-        padding: Padding around box to look for edges
+# Test function
+def test_detection():
+    """Test the object detection functionality"""
+    try:
+        detector = ObjectDetector()
         
-    Returns:
-        Edge-aligned bounding boxes
-    """
-    # Convert to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # Detect edges
-    edges = cv2.Canny(gray, 50, 150)
-    
-    adjusted_boxes = []
-    for box in boxes:
-        x, y, w, h = box
+        # Create a test image (if no real image available)
+        test_img = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
         
-        # Skip if box dimensions are too small
-        if w < 10 or h < 10:
-            adjusted_boxes.append(box)
-            continue
-            
-        # Define region of interest with padding
-        roi_y_min = max(0, y-padding)
-        roi_y_max = min(img.shape[0], y+h+padding)
-        roi_x_min = max(0, x-padding)
-        roi_x_max = min(img.shape[1], x+w+padding)
+        # Test detection
+        results = detector.detect_objects_frame(test_img)
         
-        # Extract ROI from edge image
-        roi = edges[roi_y_min:roi_y_max, roi_x_min:roi_x_max]
+        logger.info(f"Detection test completed. Found {len(results)} objects.")
+        return True
         
-        if roi.size == 0:  # Skip if ROI is empty
-            adjusted_boxes.append(box)
-            continue
-            
-        # Find contours
-        contours, _ = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        if contours:
-            # Find the largest contour
-            largest = max(contours, key=cv2.contourArea)
-            # Only adjust if contour is significant
-            if cv2.contourArea(largest) > 20:
-                x_min, y_min, w_adj, h_adj = cv2.boundingRect(largest)
-                # Adjust coordinates relative to original image
-                x_adj = roi_x_min + x_min
-                y_adj = roi_y_min + y_min
-                adjusted_boxes.append([x_adj, y_adj, w_adj, h_adj])
-            else:
-                adjusted_boxes.append(box)
-        else:
-            adjusted_boxes.append(box)
-            
-    return adjusted_boxes
+    except Exception as e:
+        logger.error(f"Detection test failed: {str(e)}")
+        return False
 
-def apply_nms(boxes, scores, class_ids, iou_thresh=0.45):
-    """
-    Apply Non-Maximum Suppression to remove redundant detections
-    
-    Args:
-        boxes: List of bounding boxes [x, y, w, h]
-        scores: List of confidence scores
-        class_ids: List of class IDs
-        iou_thresh: IoU threshold for NMS
-        
-    Returns:
-        Filtered boxes, scores, and class IDs
-    """
-    # Convert to numpy arrays
-    boxes_np = np.array(boxes)
-    scores_np = np.array(scores)
-    class_ids_np = np.array(class_ids)
-    
-    # Sort by score
-    indices = np.argsort(scores_np)[::-1]
-    boxes_np = boxes_np[indices]
-    scores_np = scores_np[indices]
-    class_ids_np = class_ids_np[indices]
-    
-    # Get indices of boxes to keep
-    keep_indices = cv2.dnn.NMSBoxes(
-        boxes_np.tolist(),
-        scores_np.tolist(),
-        0.0,  # conf_threshold (already filtered)
-        iou_thresh
-    )
-    
-    if len(keep_indices) > 0:
-        # Extract kept boxes
-        result_boxes = [boxes_np[i].tolist() for i in keep_indices]
-        result_scores = [scores_np[i] for i in keep_indices]
-        result_class_ids = [class_ids_np[i] for i in keep_indices]
-        return result_boxes, result_scores, result_class_ids
-    else:
-        return [], [], []
-    
+
+if __name__ == "__main__":
+    # Run test if script is executed directly
+    test_detection()

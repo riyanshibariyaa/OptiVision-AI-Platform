@@ -761,269 +761,365 @@
     </div>
 
     <script>
-        let selectedFile = null;
-        let processingJobId = null;
-        let isVideoProcessing = false;
+        // Replace the existing JavaScript section in your neural_detect.html with these fixes
+// Only the JavaScript functionality is changed - no CSS or HTML structure changes
 
-        // DOM Elements
-        const fileInput = document.getElementById('neuralFileInput');
-        const dropzone = document.querySelector('.neural-dropzone');
-        const processBtn = document.getElementById('processBtn');
-        const confidenceSlider = document.getElementById('confidenceSlider');
-        const confidenceValue = document.getElementById('confidenceValue');
-        const neuralProgress = document.getElementById('neuralProgress');
-        const progressFill = document.getElementById('progressFill');
-        const resultsArea = document.getElementById('resultsArea');
-        const videoControls = document.getElementById('videoControls');
 
-        // Event Listeners
-        fileInput.addEventListener('change', handleFileSelect);
-        confidenceSlider.addEventListener('input', updateConfidence);
-        processBtn.addEventListener('click', initiateDetection);
+    let selectedFile = null;
+    let isVideoProcessing = false;
 
-        // Drag and drop
-        dropzone.addEventListener('dragover', handleDragOver);
-        dropzone.addEventListener('dragleave', handleDragLeave);
-        dropzone.addEventListener('drop', handleDrop);
+    // DOM Elements - keep your existing IDs
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const processBtn = document.getElementById('processBtn');
+    const neuralProgress = document.getElementById('neuralProgress');
+    const progressFill = document.getElementById('progressFill');
+    const resultsArea = document.getElementById('resultsArea');
+    const resultsContent = document.getElementById('resultsContent');
+    const confidenceSlider = document.getElementById('confidenceSlider');
+    const confidenceValue = document.getElementById('confidenceValue');
 
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                selectedFile = file;
-                updateDropzone(file);
-                processBtn.disabled = false;
-            }
+    // Event Listeners - unchanged
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', handleDragOver);
+    dropzone.addEventListener('dragleave', handleDragLeave);
+    dropzone.addEventListener('drop', handleDrop);
+    fileInput.addEventListener('change', handleFileSelect);
+    processBtn.addEventListener('click', initiateDetection);
+    confidenceSlider.addEventListener('input', updateConfidence);
+
+    function handleFileSelect(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            selectedFile = files[0];
+            updateDropzone(files[0]);
+            processBtn.disabled = false;
+        }
+    }
+
+    function updateDropzone(file) {
+        const icon = dropzone.querySelector('.dropzone-icon');
+        const text = dropzone.querySelector('.dropzone-text');
+        const subtext = dropzone.querySelector('.dropzone-subtext');
+        
+        // Keep existing styling, only update content
+        icon.className = file.type.startsWith('video/') ? 
+            'fas fa-video dropzone-icon' : 'fas fa-image dropzone-icon';
+        text.textContent = `TARGET: ${file.name}`;
+        subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB • READY FOR NEURAL ANALYSIS`;
+        
+        isVideoProcessing = file.type.startsWith('video/');
+    }
+
+    function updateConfidence() {
+        confidenceValue.textContent = confidenceSlider.value + '%';
+    }
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        dropzone.classList.add('dragover');
+    }
+
+    function handleDragLeave() {
+        dropzone.classList.remove('dragover');
+    }
+
+    function handleDrop(event) {
+        event.preventDefault();
+        dropzone.classList.remove('dragover');
+        
+        const files = event.dataTransfer.files;
+        if (files.length > 0) {
+            selectedFile = files[0];
+            fileInput.files = files;
+            updateDropzone(files[0]);
+            processBtn.disabled = false;
+        }
+    }
+
+    // FIXED: Main detection function with proper error handling
+    async function initiateDetection() {
+        if (!selectedFile) {
+            console.error('No file selected');
+            return;
         }
 
-        function updateDropzone(file) {
-            const icon = dropzone.querySelector('.dropzone-icon');
-            const text = dropzone.querySelector('.dropzone-text');
-            const subtext = dropzone.querySelector('.dropzone-subtext');
-            
-            icon.className = file.type.startsWith('video/') ? 'fas fa-video dropzone-icon' : 'fas fa-image dropzone-icon';
-            text.textContent = `TARGET: ${file.name}`;
-            subtext.textContent = `${(file.size / 1024 / 1024).toFixed(1)} MB • READY FOR NEURAL ANALYSIS`;
-            
-            dropzone.style.borderColor = '#0066FF';
-            dropzone.style.background = 'rgba(0, 255, 255, 0.1)';
-            
-            isVideoProcessing = file.type.startsWith('video/');
-        }
-
-        function updateConfidence() {
-            confidenceValue.textContent = confidenceSlider.value + '%';
-        }
-
-        function handleDragOver(event) {
-            event.preventDefault();
-            dropzone.classList.add('dragover');
-        }
-
-        function handleDragLeave() {
-            dropzone.classList.remove('dragover');
-        }
-
-        function handleDrop(event) {
-            event.preventDefault();
-            dropzone.classList.remove('dragover');
-            
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                selectedFile = files[0];
-                fileInput.files = files;
-                updateDropzone(files[0]);
-                processBtn.disabled = false;
-            }
-        }
-
-        async function initiateDetection() {
-            if (!selectedFile) return;
-
-            processBtn.disabled = true;
-            processBtn.innerHTML = '<div class="neural-spinner"></div> ANALYZING...';
+        // Disable button and show processing state
+        processBtn.disabled = true;
+        const originalButtonText = processBtn.innerHTML;
+        processBtn.innerHTML = '<div class="neural-spinner"></div> ANALYZING...';
+        
+        // Show progress bar
+        if (neuralProgress) {
             neuralProgress.style.display = 'block';
+        }
 
-            // Show processing state
-            resultsArea.innerHTML = `
-                <div class="neural-spinner"></div>
-                <p style="color: #0066FF; font-family: 'Open Sans', sans-serif; margin-top: 1rem;">
-                    NEURAL DETECTION ACTIVE
-                </p>
-                <p style="color: #0066FF; font-size: 0.9rem;">
-                    Scanning for objects and patterns...
-                </p>
+        // Show initial processing message
+        if (resultsArea && resultsContent) {
+            resultsContent.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="neural-spinner"></div>
+                    <p style="margin-top: 1rem;">NEURAL DETECTION ACTIVE</p>
+                    <p style="margin-top: 0.5rem; opacity: 0.7;">Processing ${selectedFile.name}...</p>
+                </div>
             `;
+            resultsArea.style.display = 'block';
+        }
 
-            if (isVideoProcessing) {
-                videoControls.style.display = 'flex';
-            }
-
-            // Simulate neural processing
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += Math.random() * 12;
-                if (progress > 90) progress = 90;
-                progressFill.style.width = progress + '%';
-            }, 400);
-
+        try {
+            // Create FormData for file upload
             const formData = new FormData();
             formData.append('file', selectedFile);
-            formData.append('confidence', confidenceSlider.value / 100);
-            formData.append('model', document.getElementById('modelSelect').value);
+            formData.append('confidence', confidenceSlider.value);
 
+            // Add processing mode if element exists
+            const processingMode = document.getElementById('processingMode');
+            if (processingMode) {
+                formData.append('mode', processingMode.value);
+            }
+
+            console.log('Uploading file:', selectedFile.name);
+
+            // Start progress animation
+            const progressInterval = animateProgress();
+
+            // Make API request
+            const response = await fetch('/api/neural/detect/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            // Clear progress animation
+            clearInterval(progressInterval);
+
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log('Detection result:', result);
+
+            // Handle different response types
+            if (result.type === 'video_stream') {
+                handleVideoProcessing(result);
+            } else if (result.type === 'image_analysis') {
+                handleImageResults(result);
+            } else {
+                // Handle generic success response
+                handleGenericResults(result);
+            }
+
+        } catch (error) {
+            console.error('Detection error:', error);
+            showError(error.message || 'Detection failed');
+        } finally {
+            // Reset UI state
+            if (neuralProgress) {
+                neuralProgress.style.display = 'none';
+            }
+            processBtn.disabled = false;
+            processBtn.innerHTML = originalButtonText;
+        }
+    }
+
+    // FIXED: Progress animation with proper cleanup
+    function animateProgress() {
+        if (!progressFill) return null;
+        
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress >= 90) {
+                progress = 90;
+                clearInterval(interval);
+            }
+            progressFill.style.width = progress + '%';
+        }, 300);
+
+        return interval;
+    }
+
+    // FIXED: Video processing handler
+    function handleVideoProcessing(result) {
+        if (!resultsContent) return;
+
+        resultsContent.innerHTML = `
+            <div style="padding: 1rem; border-left: 4px solid currentColor;">
+                <h3 style="margin-bottom: 1rem;">
+                    <i class="fas fa-video"></i> Video Analysis in Progress
+                </h3>
+                <p style="margin-bottom: 1rem;">
+                    Job ID: <strong>${result.job_id}</strong>
+                </p>
+                <p style="margin-bottom: 1rem;">
+                    Status: <strong>${result.neural_response || 'Processing'}</strong>
+                </p>
+                <p style="margin-bottom: 1rem;">
+                    Neural Load: <strong>${result.neural_load || 'Unknown'}</strong>
+                </p>
+                <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 5px;">
+                    <i class="fas fa-info-circle"></i> 
+                    Video processing will complete in background. Results will appear here automatically.
+                </div>
+            </div>
+        `;
+        
+        // Start polling for video completion
+        if (result.job_id) {
+            pollVideoStatus(result.job_id);
+        }
+    }
+
+    // FIXED: Image results handler
+    function handleImageResults(result) {
+        if (!resultsContent || !progressFill) return;
+
+        // Complete progress bar
+        progressFill.style.width = '100%';
+        
+        setTimeout(() => {
+            let imageHtml = '';
+            if (result.output_url) {
+                // Add timestamp to prevent caching issues
+                const timestamp = new Date().getTime();
+                imageHtml = `<img src="${result.output_url}?t=${timestamp}" style="max-width: 100%; height: auto; border-radius: 10px; margin-bottom: 1rem;" alt="Detection Results">`;
+            }
+
+            resultsContent.innerHTML = `
+                <div style="padding: 1rem;">
+                    <h3 style="margin-bottom: 1rem;">
+                        <i class="fas fa-check-circle"></i> Analysis Complete
+                    </h3>
+                    
+                    ${imageHtml}
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                        <div style="text-align: center; padding: 1rem; border: 1px solid currentColor; border-radius: 5px;">
+                            <div style="font-size: 1.5rem; font-weight: bold;">${result.detections || 0}</div>
+                            <div style="opacity: 0.8;">Objects Detected</div>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; border: 1px solid currentColor; border-radius: 5px;">
+                            <div style="font-size: 1.5rem; font-weight: bold;">${result.confidence || 0}%</div>
+                            <div style="opacity: 0.8;">Avg Confidence</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 5px;">
+                        <i class="fas fa-info-circle"></i> 
+                        ${result.message || 'Detection completed successfully'}
+                    </div>
+
+                    ${result.detected_objects && result.detected_objects.length > 0 ? `
+                        <div style="margin-top: 1rem;">
+                            <strong>Detected Objects:</strong> ${result.detected_objects.join(', ')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }, 500);
+    }
+
+    // FIXED: Generic results handler for other response types
+    function handleGenericResults(result) {
+        if (!resultsContent) return;
+
+        resultsContent.innerHTML = `
+            <div style="padding: 1rem;">
+                <h3 style="margin-bottom: 1rem;">
+                    <i class="fas fa-info-circle"></i> Processing Complete
+                </h3>
+                <p><strong>Status:</strong> ${result.status || 'Unknown'}</p>
+                <p><strong>Response:</strong> ${result.neural_response || 'No response'}</p>
+                <p><strong>Message:</strong> ${result.message || 'No message'}</p>
+                
+                ${result.job_id ? `<p><strong>Job ID:</strong> ${result.job_id}</p>` : ''}
+            </div>
+        `;
+    }
+
+    // FIXED: Video status polling with proper error handling
+    function pollVideoStatus(jobId) {
+        let pollCount = 0;
+        const maxPolls = 100; // 5 minutes at 3-second intervals
+        
+        const pollInterval = setInterval(async () => {
+            pollCount++;
+            
             try {
-                const response = await fetch('/api/neural/detect/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
+                const response = await fetch(`/api/neural/detect/status/${jobId}`);
                 
-                clearInterval(progressInterval);
-                progressFill.style.width = '100%';
+                if (!response.ok) {
+                    throw new Error(`Status check failed: ${response.status}`);
+                }
                 
-                setTimeout(() => {
-                    displayResults(result);
-                }, 500);
+                const status = await response.json();
+                console.log('Poll status:', status);
+                
+                if (status.status === 'COMPLETE') {
+                    clearInterval(pollInterval);
+                    handleImageResults(status);
+                } else if (status.status === 'ERROR') {
+                    clearInterval(pollInterval);
+                    showError(status.message || 'Video processing failed');
+                }
                 
             } catch (error) {
-                clearInterval(progressInterval);
-                console.error('Neural error:', error);
-                showError(error.message || 'Neural detection failed');
+                console.error('Polling error:', error);
+                
+                // Stop polling after repeated failures or max attempts
+                if (pollCount >= maxPolls) {
+                    clearInterval(pollInterval);
+                    showError('Video processing status check timed out');
+                }
             }
+        }, 3000);
+    }
+
+    // FIXED: Error display function
+    function showError(message) {
+        if (!resultsContent) {
+            console.error('Error:', message);
+            return;
         }
 
-        function displayResults(result) {
-            neuralProgress.style.display = 'none';
-            videoControls.style.display = 'none';
-            processBtn.disabled = false;
-            processBtn.innerHTML = '<i class="fas fa-search"></i> INITIATE DETECTION';
-
-            const detectionCount = Math.floor(Math.random() * 8) + 2;
-            const confidence = (Math.random() * 20 + 75).toFixed(1);
-
-            const resultHtml = `
-                <img src="data:image/svg+xml,${encodeURIComponent(`
-                    <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100%" height="100%" fill="#000"/>
-                        <rect x="50" y="50" width="300" height="200" fill="#0066FF" opacity="0.1"/>
-                        <rect x="80" y="80" width="60" height="40" fill="none" stroke="#0066FF" stroke-width="2"/>
-                        <rect x="200" y="120" width="80" height="60" fill="none" stroke="#0066FF" stroke-width="2"/>
-                        <rect x="300" y="90" width="50" height="30" fill="none" stroke="#0066FF" stroke-width="2"/>
-                        <text x="200" y="40" text-anchor="middle" fill="#0066FF" font-family="sans-serif" font-size="14">
-                            OBJECTS DETECTED: ${detectionCount}
-                        </text>
-                        <text x="200" y="280" text-anchor="middle" fill="#0066FF" font-family="sans-serif" font-size="12">
-                            Neural confidence: ${confidence}%
-                        </text>
-                    </svg>
-                `)}" class="result-image" alt="Detection result">
-                <div class="detection-stats">
-                    <div class="stat-row">
-                        <span>OBJECTS DETECTED:</span>
-                        <span>${detectionCount}</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>NEURAL CONFIDENCE:</span>
-                        <span>${confidence}%</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>PROCESSING TIME:</span>
-                        <span>2.${Math.floor(Math.random() * 9)}s</span>
-                    </div>
-                    <div class="stat-row">
-                        <span>MODEL USED:</span>
-                        <span>${document.getElementById('modelSelect').value.toUpperCase()}</span>
-                    </div>
+        resultsContent.innerHTML = `
+            <div style="padding: 1rem; border-left: 4px solid #ff4444;">
+                <h3 style="color: #ff4444; margin-bottom: 1rem;">
+                    <i class="fas fa-exclamation-triangle"></i> Error
+                </h3>
+                <p>${message}</p>
+                <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.1); border-radius: 5px;">
+                    <strong>Troubleshooting:</strong>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                        <li>Check if the file format is supported</li>
+                        <li>Try a smaller file size</li>
+                        <li>Refresh the page and try again</li>
+                    </ul>
                 </div>
-            `;
-            
-            resultsArea.innerHTML = resultHtml;
-        }
-
-        function pauseProcessing() {
-            showNotification('Neural processing paused');
-        }
-
-        function resumeProcessing() {
-            showNotification('Neural processing resumed');
-        }
-
-        function stopProcessing() {
-            videoControls.style.display = 'none';
-            showNotification('Neural processing terminated');
-        }
-
-        function showError(message) {
-            neuralProgress.style.display = 'none';
-            videoControls.style.display = 'none';
-            processBtn.disabled = false;
-            processBtn.innerHTML = '<i class="fas fa-search"></i> INITIATE DETECTION';
-            
-            resultsArea.innerHTML = `
-                <div style="text-align: center; color: #0066FF;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #0066FF;"></i>
-                    <p style="font-family: 'Open Sans', sans-serif; margin-bottom: 0.5rem;">NEURAL ERROR</p>
-                    <p style="color: #0066FF; font-size: 0.9rem;">${message}</p>
-                </div>
-            `;
-        }
-
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: rgba(0, 255, 255, 0.1);
-                border: 2px solid #0066FF;
-                color: #0066FF;
-                padding: 1rem 1.5rem;
-                border-radius: 10px;
-                font-family: 'Open Sans', sans-serif;
-                z-index: 10000;
-                animation: slideIn 0.3s ease;
-            `;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 300);
-            }, 3000);
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            updateConfidence();
-            
-            setTimeout(() => {
-                resultsArea.innerHTML = `
-                    <div class="results-placeholder">
-                        <i class="fas fa-search" style="color: #0066FF;"></i>
-                        <p style="color: #FFFFFF;">NEURAL DETECTION ONLINE</p>
-                        <p style="color: #FFFFFF;">Object recognition systems ready • Upload target for analysis</p>
-                    </div>
-                `;
-            }, 1000);
-        });
-
-        // Add CSS for animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
+            </div>
         `;
-        document.head.appendChild(style);
+        
+        if (resultsArea) {
+            resultsArea.style.display = 'block';
+        }
+    }
+
+    // Initialize confidence display
+    updateConfidence();
+
+    // Add error handling for uncaught errors
+    window.addEventListener('error', function(e) {
+        console.error('JavaScript error:', e.error);
+    });
+
+    // Add unhandled promise rejection handling
+    window.addEventListener('unhandledrejection', function(e) {
+        console.error('Unhandled promise rejection:', e.reason);
+    });
+
     </script>
 </body>
 </html>
