@@ -12,9 +12,13 @@ google-auth>=2.20.0,<3.0.0
 google-auth-oauthlib>=1.0.0,<2.0.0
 google-auth-httplib2>=0.1.0,<1.0.0
 google-api-python-client>=2.100.0,<3.0.0
-easyocr>=1.7.0
+paddleocr>=2.7.0
+paddlepaddle>=2.5.0
 numpy
 opencv-python
 pdf2image
 Pillow
 python-docx
+imread-from-url
+onnxruntime-gpu
+cap-from-youtube
