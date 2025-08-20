@@ -13,6 +13,7 @@ import cv2
 import numpy as np
 import logging
 import os
+import gc
 import threading
 from modules.blur_module import blur_bp
 from TextExtraction import extract_text_from_image, extract_text
@@ -96,6 +97,19 @@ def neural_leak():
 
 
 ################################################################## 
+def optimize_memory():
+    """Optimize memory usage for deployment"""
+    os.environ['TORCH_HOME'] = '/tmp'
+    os.environ['PADDLEHUB_HOME'] = '/tmp' 
+    os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['MKL_NUM_THREADS'] = '1'
+    os.environ['NUMEXPR_MAX_THREADS'] = '1'
+    
+    # Force garbage collection
+    gc.collect()
+
+# Call this early in your app initialization
+optimize_memory()
 # Enhanced API Endpoints with Cyberpunk Response Format
 
 @app.route('/api/neural/blur/upload', methods=['POST'])
@@ -636,17 +650,18 @@ def not_found_error(error):
     return error
 
 # Add startup initialization
+
+
 def initialize_neural_systems():
-    """Initialize neural monitoring systems on startup"""
-    logger.info("Initializing Neural Leak Detection Systems...")
+    """Initialize neural monitoring systems on startup - Memory optimized"""
+    logger.info("Initializing Neural Systems (Memory Optimized)...")
     
     # Create uploads directory if it doesn't exist
     os.makedirs("uploads", exist_ok=True)
     
-    # Log system startup
-    logger.info("Neural Leak Detection System Online")
+    # Don't initialize models here - use lazy loading instead
+    logger.info("Neural Systems Ready (Models will load on demand)")
 
-# Add this to your app.py - replace the existing neural_detect_upload function
 
 @app.route('/api/neural/detect/upload', methods=['POST'])
 def neural_detect_upload():
@@ -957,5 +972,34 @@ def debug_detection():
 
 ################################################################## 
 if __name__ == '__main__':
+    # Memory optimization first
+    optimize_memory()
+    
+    # Initialize directories on startup
+    try:
+        from config import Config
+        Config.init_directories()
+        logger.info("Application directories initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing directories: {e}")
+    
+    # Initialize neural systems (without loading models)
+    initialize_neural_systems()
+    
+    # Render-compatible port binding
     port = int(os.environ.get('PORT', 6000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    host = '0.0.0.0'
+    
+    print("🚀 Starting Neural Vision Server (Memory Optimized)...")
+    print(f"🌐 Server binding to: {host}:{port}")
+    
+    # Force CPU and memory optimization
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Disable CUDA
+    
+    app.run(
+        host=host,
+        port=port,
+        debug=False,
+        threaded=True,
+        processes=1  # Single process to save memory
+    )
