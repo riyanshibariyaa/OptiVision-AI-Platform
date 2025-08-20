@@ -24,7 +24,7 @@ import base64
 
 import tempfile
 from werkzeug.utils import secure_filename
-from modules.object_detection.object_detection import ObjectDetector
+from object_detection import ObjectDetector
 
 # Configure logging
 logging.basicConfig(
