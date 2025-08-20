@@ -22,3 +22,4 @@ python-docx
 imread-from-url
 onnxruntime-gpu
 cap-from-youtube
+gunicorn
