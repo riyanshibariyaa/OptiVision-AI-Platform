@@ -242,19 +242,6 @@ CMD ["python", "app.py"]
 - **Documentation**: Comprehensive docstrings
 - **Testing**: Unit tests for critical functions
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Your Name**  
-AI/ML Engineer & Computer Vision Specialist
-
-- 🌐 Portfolio: [your-portfolio.com](https://your-portfolio.com)
-- 💼 LinkedIn: [linkedin.com/in/yourprofile](https://linkedin.com/in/yourprofile)
-- 📧 Email: your.email@domain.com
-- 🚀 Platform: [OptiVision Live Demo](https://optivision-ai-platform.onrender.com/neural-dashboard)
 
 ## 🙏 Acknowledgments
 
