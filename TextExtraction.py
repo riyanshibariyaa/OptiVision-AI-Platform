@@ -1,13 +1,24 @@
+# REPLACE your TextExtraction.py with this lazy loading version:
+
 import cv2
 import fitz
 import docx
 import os
 import numpy as np
-from paddleocr import PaddleOCR
 from PIL import Image
 
-# Initialize PaddleOCR
-ocr = PaddleOCR(use_angle_cls=True, lang='en')
+# LAZY LOADING - Don't initialize PaddleOCR at import time
+ocr = None
+
+def get_ocr_instance():
+    """Get OCR instance with lazy loading"""
+    global ocr
+    if ocr is None:
+        print("Loading PaddleOCR on demand...")
+        from paddleocr import PaddleOCR
+        ocr = PaddleOCR(use_angle_cls=True, lang='en')
+        print("PaddleOCR loaded successfully")
+    return ocr
 
 # Function to extract text from an image file
 def extract_text_from_image(image_path):
@@ -16,13 +27,16 @@ def extract_text_from_image(image_path):
         if image is None:
             return "Error: Unable to read the image file."
         
+        # Lazy load OCR only when actually needed
+        ocr_instance = get_ocr_instance()
+        
         # Convert image to grayscale for better OCR performance
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         processed_image_path = "processed_image.jpg"
         cv2.imwrite(processed_image_path, gray)
         
         # Perform OCR using PaddleOCR
-        result = ocr.ocr(processed_image_path, cls=True)
+        result = ocr_instance.ocr(processed_image_path, cls=True)
         
         extracted_text = "\n".join([line[1][0] for res in result for line in res])
         return extracted_text if extracted_text else "No readable text found in the image."
