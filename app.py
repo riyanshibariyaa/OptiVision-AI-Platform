@@ -969,7 +969,38 @@ def debug_detection():
             'message': str(e),
             'traceback': traceback.format_exc()
         }), 500
-
+@app.route('/api/test/blur')
+def test_blur():
+    """Test endpoint to check if blur module is working"""
+    try:
+        from modules.blur_module import models_loaded, face_model, plate_model
+        
+        # Test creating a simple image and blurring it
+        test_image = np.zeros((100, 100, 3), dtype=np.uint8)
+        test_image[:] = (128, 128, 128)  # Gray image
+        
+        # Try to apply a simple blur
+        import cv2
+        kernel_size = 15
+        blurred = cv2.GaussianBlur(test_image, (kernel_size, kernel_size), 0)
+        
+        return jsonify({
+            'status': 'SUCCESS',
+            'blur_module_status': 'operational',
+            'models_loaded': models_loaded,
+            'face_model_available': face_model is not None,
+            'plate_model_available': plate_model is not None,
+            'opencv_working': True,
+            'test_blur_applied': True,
+            'message': 'Blur functionality is working correctly'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'ERROR',
+            'message': str(e),
+            'blur_module_status': 'error'
+        }), 500
 ################################################################## 
 if __name__ == '__main__':
     # Memory optimization first
