@@ -957,40 +957,5 @@ def debug_detection():
 
 ################################################################## 
 if __name__ == '__main__':
-    # Initialize directories on startup
-    try:
-        Config.init_directories()
-        logger.info("Application directories initialized successfully")
-    except Exception as e:
-        logger.error(f"Error initializing directories: {e}")
-    
-    # Initialize neural systems BEFORE starting the app
-    initialize_neural_systems()
-    
-    # Production vs Development configuration
-    port = int(os.environ.get('PORT', 5000))
-    is_production = os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PORT')
-    
-    if is_production:
-        # Production mode for Railway
-        print("🚀 Starting Optivision AI Platform in Production Mode...")
-        print(f"🌐 Port: {port}")
-        app.run(
-            host='0.0.0.0',
-            port=port,
-            debug=False,
-            threaded=True
-        )
-    else:
-        # Development mode for local testing
-        print("🚀 Starting Neural Vision Server...")
-        print("🌐 Access the application at: http://127.0.0.1:5000/")
-        print("⚠️  Auto-reload disabled to prevent Windows socket issues")
-        
-        app.run(
-            debug=True,
-            use_reloader=False,  # This fixes the Windows threading issues
-            host='127.0.0.1',
-            port=5000,
-            threaded=True
-        )
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)
