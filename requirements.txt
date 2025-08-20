@@ -3,8 +3,8 @@ pymongo==4.5.0
 flask-jwt-extended==4.5.3
 bcrypt==4.0.1
 flask-cors==4.0.0
-torch==2.0.1+cpu --index-url https://download.pytorch.org/whl/cpu
-torchvision==0.15.2+cpu --index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1
+torchvision==0.20.1
 ultralytics==8.0.200
 PyMuPDF==1.23.8
 werkzeug==2.3.7
