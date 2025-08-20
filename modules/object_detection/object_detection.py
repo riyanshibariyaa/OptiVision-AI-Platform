@@ -8,6 +8,7 @@ import logging
 import time
 from pathlib import Path
 import urllib.request
+import onnxruntime
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
