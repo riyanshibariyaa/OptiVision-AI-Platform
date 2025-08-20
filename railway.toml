@@ -1,0 +1,10 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120"
+
+[environments.production.variables]
+PYTHON_VERSION = "3.9"
+YOLO_VERBOSE = "False"
+TORCH_HOME = "./models"
