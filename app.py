@@ -1,4 +1,4 @@
-# app.py - Hi-Tech Cyberpunk Version
+
 ################################################################## 
 # External/Third Party Libraries
 from pymongo import MongoClient
@@ -967,15 +967,30 @@ if __name__ == '__main__':
     # Initialize neural systems BEFORE starting the app
     initialize_neural_systems()
     
-    # IMPORTANT: Disable auto-reload to fix Windows socket issues
-    print("🚀 Starting Neural Vision Server...")
-    print("🌐 Access the application at: http://127.0.0.1:5000/")
-    print("⚠️  Auto-reload disabled to prevent Windows socket issues")
+    # Production vs Development configuration
+    port = int(os.environ.get('PORT', 5000))
+    is_production = os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PORT')
     
-    app.run(
-        debug=True,
-        use_reloader=False,  # This fixes the Windows threading issues
-        host='127.0.0.1',
-        port=5000,
-        threaded=True
-    )
+    if is_production:
+        # Production mode for Railway
+        print("🚀 Starting Optivision AI Platform in Production Mode...")
+        print(f"🌐 Port: {port}")
+        app.run(
+            host='0.0.0.0',
+            port=port,
+            debug=False,
+            threaded=True
+        )
+    else:
+        # Development mode for local testing
+        print("🚀 Starting Neural Vision Server...")
+        print("🌐 Access the application at: http://127.0.0.1:5000/")
+        print("⚠️  Auto-reload disabled to prevent Windows socket issues")
+        
+        app.run(
+            debug=True,
+            use_reloader=False,  # This fixes the Windows threading issues
+            host='127.0.0.1',
+            port=5000,
+            threaded=True
+        )
